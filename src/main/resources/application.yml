@@ -1,0 +1,4 @@
+tokens:
+  file: ${TOKEN_LOCATION:tokens.properties}
+web3j:
+  client-address: https://arb1.arbitrum.io/rpc
