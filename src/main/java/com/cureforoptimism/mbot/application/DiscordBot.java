@@ -51,11 +51,7 @@ public class DiscordBot {
               event -> {
                 String nickName = ("MAGIC $" + currentPrice);
                 String presence = String.format("24h: %.2f%%", currentChange);
-                client
-                    .getGuilds()
-                    .toStream()
-                    .forEach(
-                        g -> g.changeSelfNickname(nickName).block());
+                client.getGuilds().toStream().forEach(g -> g.changeSelfNickname(nickName).block());
                 client
                     .updatePresence(ClientPresence.online(ClientActivity.watching(presence)))
                     .block();
@@ -101,8 +97,11 @@ public class DiscordBot {
                     String tokenId = parts[1];
                     log.info("!pfp command received");
                     final var image = treasureService.getAnimatedGif(tokenId);
-                    if(image == null) {
-                      e.getMessage().getChannel().flatMap(c -> c.createMessage("I can't find a token with ID " + tokenId)).block();
+                    if (image == null) {
+                      e.getMessage()
+                          .getChannel()
+                          .flatMap(c -> c.createMessage("I can't find a token with ID " + tokenId))
+                          .block();
                       return;
                     }
 
