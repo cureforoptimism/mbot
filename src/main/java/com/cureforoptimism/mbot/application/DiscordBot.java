@@ -101,6 +101,11 @@ public class DiscordBot {
                     String tokenId = parts[1];
                     log.info("!pfp command received");
                     final var image = treasureService.getAnimatedGif(tokenId);
+                    if(image == null) {
+                      e.getMessage().getChannel().flatMap(c -> c.createMessage("I can't find a token with ID " + tokenId)).block();
+                      return;
+                    }
+
                     ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(image);
                     RequestBody body = MultipartBody.create(image, MediaType.parse("image/png"));
                     e.getMessage()

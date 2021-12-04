@@ -74,13 +74,18 @@ public class TreasureService {
             HttpRequest.newBuilder().uri(new URI(baseUri + tokenId + "/" + x)).GET().build();
 
         final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        final var obj = new JSONObject(response.body()).getString("image");
-        request = HttpRequest.newBuilder(new URI(obj)).GET().build();
+        try {
+          final var obj = new JSONObject(response.body()).getString("image");
+          request = HttpRequest.newBuilder(new URI(obj)).GET().build();
 
-        final var image = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
-        InputStream inputStream = new ByteArrayInputStream(image.body());
-        BufferedImage bufferedImage = ImageIO.read(inputStream);
-        gifEncoder.addFrame(bufferedImage);
+          final var image = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+          InputStream inputStream = new ByteArrayInputStream(image.body());
+          BufferedImage bufferedImage = ImageIO.read(inputStream);
+          gifEncoder.addFrame(bufferedImage);
+        } catch (JSONException ex) {
+          // Probably not a valid token. Just return.
+          return null;
+        }
       }
 
       gifEncoder.finish();
