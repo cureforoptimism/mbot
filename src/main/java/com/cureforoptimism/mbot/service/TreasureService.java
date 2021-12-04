@@ -8,11 +8,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.web3j.crypto.Credentials;
-import org.web3j.crypto.Keys;
-import org.web3j.protocol.Web3j;
-import org.web3j.tx.gas.ContractGasProvider;
-import org.web3j.tx.gas.DefaultGasProvider;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -35,27 +30,20 @@ import java.util.Map;
 @Component
 @Slf4j
 public class TreasureService {
-  private final Web3j web3j;
+  private final SmolBrainsContract smolBrainsContract;
   @Getter private BigDecimal floor;
   @Getter private int totalListings;
   @Getter private BigDecimal landFloor;
   @Getter private int totalFloorListings;
 
-  public TreasureService(Web3j web3j) {
-    this.web3j = web3j;
+  public TreasureService(SmolBrainsContract smolBrainsContract) {
+    this.smolBrainsContract = smolBrainsContract;
   }
 
   public BigDecimal getIq(int tokenId) {
-    ContractGasProvider contractGasProvider = new DefaultGasProvider();
     try {
-      Credentials dummyCredentials = Credentials.create(Keys.createEcKeyPair());
-      SmolBrainsContract smol =
-          SmolBrainsContract.load(
-              "0x6325439389e0797ab35752b4f43a14c004f22a9c",
-              web3j,
-              dummyCredentials,
-              contractGasProvider);
-      final var iqBig = smol.scanBrain(new BigInteger(String.valueOf(tokenId))).send();
+      final var iqBig =
+          smolBrainsContract.scanBrain(new BigInteger(String.valueOf(tokenId))).send();
 
       MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
       final var iq = new BigDecimal(iqBig, 18, mc);
@@ -71,17 +59,8 @@ public class TreasureService {
   }
 
   public byte[] getAnimatedGif(String tokenId) {
-    ContractGasProvider contractGasProvider = new DefaultGasProvider();
     try {
-      Credentials dummyCredentials = Credentials.create(Keys.createEcKeyPair());
-      SmolBrainsContract smol =
-          SmolBrainsContract.load(
-              "0x6325439389e0797ab35752b4f43a14c004f22a9c",
-              web3j,
-              dummyCredentials,
-              contractGasProvider);
-
-      String baseUri = smol.baseURI().send();
+      String baseUri = smolBrainsContract.baseURI().send();
       HttpClient httpClient = HttpClient.newHttpClient();
 
       ByteArrayOutputStream finishedImage = new ByteArrayOutputStream();
@@ -115,21 +94,13 @@ public class TreasureService {
   }
 
   public Map.Entry<Integer, BigDecimal> getHighestIq() {
-    ContractGasProvider contractGasProvider = new DefaultGasProvider();
     try {
-      Credentials dummyCredentials = Credentials.create(Keys.createEcKeyPair());
-      SmolBrainsContract smol =
-          SmolBrainsContract.load(
-              "0x6325439389e0797ab35752b4f43a14c004f22a9c",
-              web3j,
-              dummyCredentials,
-              contractGasProvider);
-
-      final var totalSupply = smol.totalSupply().send();
+      final var totalSupply = smolBrainsContract.totalSupply().send();
       Map<Integer, BigDecimal> iqs = new HashMap<>();
       for (int x = 1; x <= 100; x++) {
         try {
-          final var iqBig = smol.scanBrain(new BigInteger(Integer.toString(x))).send();
+          final var iqBig =
+              smolBrainsContract.scanBrain(new BigInteger(Integer.toString(x))).send();
           MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
           final var iq = new BigDecimal(iqBig, 18, mc);
 

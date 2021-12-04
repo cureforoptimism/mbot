@@ -55,9 +55,7 @@ public class DiscordBot {
                     .getGuilds()
                     .toStream()
                     .forEach(
-                        g -> {
-                          g.changeSelfNickname(nickName).block();
-                        });
+                        g -> g.changeSelfNickname(nickName).block());
                 client
                     .updatePresence(ClientPresence.online(ClientActivity.watching(presence)))
                     .block();
