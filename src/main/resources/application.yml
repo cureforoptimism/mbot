@@ -1,3 +1,15 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show_sql: true
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:3307/mbot?createDatabaseIfNotExist=true
+    username: root
+    password: password
+
 tokens:
   file: ${TOKEN_LOCATION:tokens.properties}
 web3j:

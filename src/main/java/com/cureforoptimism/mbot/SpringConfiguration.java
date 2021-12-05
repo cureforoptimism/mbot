@@ -9,6 +9,8 @@ import java.security.NoSuchProviderException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.Keys;
 import org.web3j.protocol.Web3j;
@@ -18,6 +20,8 @@ import org.web3j.tx.gas.DefaultGasProvider;
 
 @Slf4j
 @Configuration
+@EnableScheduling
+@EnableTransactionManagement
 public class SpringConfiguration {
   @Bean
   public CoinGeckoApiClient coinGeckoApiClient() {
