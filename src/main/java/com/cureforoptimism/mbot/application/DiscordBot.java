@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
+
 @Component
 @Slf4j
 public class DiscordBot {
@@ -240,12 +242,13 @@ public class DiscordBot {
                         .flatMap(
                             c -> c.createMessage(count + " smols have " + trait + " of " + value))
                         .block();
-                    // Uncomment this if you ever need to refresh traits; otherwise, yeah, this is a
-                    // super heavy op
                   }
-                  //                  } else if
-                  // (e.getMessage().getContent().startsWith("!rarities")) {
-                  //                    treasureService.getAllRarities();
+                  // Uncomment this if you ever need to refresh traits; otherwise, yeah, this is a
+                  // super heavy op
+                  //                  }
+                  //                                    } else if
+                  //                   (e.getMessage().getContent().startsWith("!rarities")) {
+                  //                                      treasureService.getAllRarities();
                 } else if (e.getMessage().getContent().startsWith("!smol")) {
                   log.info("!smol called");
                   String[] parts = e.getMessage().getContent().split(" ");
@@ -264,9 +267,8 @@ public class DiscordBot {
   }
 
   private float getTraitRarity(String type, String value) {
-    int totalSmols = 10363; // TODO: Just make this a global somewhere, retrieved from db
     long count = traitsRepository.countByTypeIgnoreCaseAndValueIgnoreCase(type, value);
-    return ((float) count / (float) totalSmols) * 100.0f;
+    return ((float) count / (float) SMOL_TOTAL_SUPPLY) * 100.0f;
   }
 
   public void printSmol(MessageCreateEvent e, String id) {

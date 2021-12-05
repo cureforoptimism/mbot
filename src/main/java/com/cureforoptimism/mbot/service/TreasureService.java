@@ -31,6 +31,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.*;
 
+import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
+
 @Component
 @Slf4j
 public class TreasureService {
@@ -73,12 +75,10 @@ public class TreasureService {
   @Transactional
   public void getAllRarities() {
     try {
-      final var totalSupply = smolBrainsContract.totalSupply().send();
-
       String baseUri = smolBrainsContract.baseURI().send();
       HttpClient httpClient = HttpClient.newHttpClient();
 
-      for (int x = 9999; x <= totalSupply.intValue(); x++) {
+      for (int x = 0; x <= SMOL_TOTAL_SUPPLY; x++) {
         Set<Trait> traits = new HashSet<>();
 
         HttpRequest request =
@@ -167,7 +167,7 @@ public class TreasureService {
 
   public Map.Entry<Integer, BigDecimal> getHighestIq() {
     try {
-      final var totalSupply = smolBrainsContract.totalSupply().send();
+      final var totalSupply = 13421;
       Map<Integer, BigDecimal> iqs = new HashMap<>();
       for (int x = 1; x <= 100; x++) {
         try {
