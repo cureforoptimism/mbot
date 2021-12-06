@@ -1,7 +1,9 @@
 package com.cureforoptimism.mbot.application;
 
 import com.cureforoptimism.mbot.discord.events.RefreshEvent;
+import com.cureforoptimism.mbot.domain.RarityRank;
 import com.cureforoptimism.mbot.domain.Trait;
+import com.cureforoptimism.mbot.repository.RarityRankRepository;
 import com.cureforoptimism.mbot.repository.SmolRepository;
 import com.cureforoptimism.mbot.repository.TraitsRepository;
 import com.cureforoptimism.mbot.service.TokenService;
@@ -18,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.web3j.protocol.Web3j;
 import reactor.core.publisher.Mono;
 
@@ -30,11 +33,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
+import static com.cureforoptimism.mbot.Constants.SMOL_HIGHEST_ID;
 import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
 
 @Component
@@ -48,6 +49,7 @@ public class DiscordBot {
   final TraitsRepository traitsRepository;
   final SmolRepository smolRepository;
   final SmolBrainsContract smolBrainsContract;
+  final RarityRankRepository rarityRankRepository;
   Double currentPrice;
   Double currentChange;
 
@@ -58,7 +60,8 @@ public class DiscordBot {
       Web3j web3j,
       TraitsRepository traitsRepository,
       SmolRepository smolRepository,
-      SmolBrainsContract smolBrainsContract) {
+      SmolBrainsContract smolBrainsContract,
+      RarityRankRepository rarityRankRepository) {
     this.context = context;
     this.tokenService = tokenService;
     this.treasureService = treasureService;
@@ -66,6 +69,7 @@ public class DiscordBot {
     this.traitsRepository = traitsRepository;
     this.smolRepository = smolRepository;
     this.smolBrainsContract = smolBrainsContract;
+    this.rarityRankRepository = rarityRankRepository;
     this.client =
         DiscordClientBuilder.create(tokenService.getDiscordToken()).build().login().block();
 
@@ -87,7 +91,47 @@ public class DiscordBot {
           .on(MessageCreateEvent.class)
           .subscribe(
               e -> {
-                if (e.getMessage().getContent().toLowerCase().startsWith("!averageiq")) {
+                if (e.getMessage().getContent().toLowerCase().startsWith("!smolhelp")) {
+                  String helpMessage = """
+                          `!smol <token_id>` - shows your smol, rank, picture, and smol traits/rarities
+                          `!averageiq` - shows the average Smol IQ across the Smoliverse
+                          `!floor` - Shows the current floor price of Smols on the Treasure marketplace
+                          `!pfp <token_id>` - Creates an animated gif of a Smol's brain growing (optional: try `!pfp <token_id> reverse`)
+                          `!traits` - List all top level traits
+                          `!traits <type>` - List all possible trait values, and their rarities
+                          """;
+
+                  final var msg = EmbedCreateSpec.builder()
+                      .title("SmolBot Help")
+                      .author(
+                          "SmolBot",
+                          null,
+                          "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
+                      .description(helpMessage)
+                      .addField(
+                          "Note: ",
+                          "This bot developed for fun by `Cure For Optimism#5061`, and is unofficial. Smol admins aren't associated with this bot and can't help you with issues. Ping smol cureForOptimism with any feedback/questions",
+                          false)
+                      .build();
+                  e.getMessage().getChannel().flatMap(c -> c.createMessage(msg)).block();
+                  } else if(e.getMessage().getContent().toLowerCase().startsWith("!top20")) {
+                  StringBuilder ranks = new StringBuilder("```");
+                  Set<RarityRank> rarities = rarityRankRepository.findTop20();
+                  for(RarityRank rarityRank : rarities) {
+                    ranks.append(rarityRank.getRank()).append(": #").append(rarityRank.getSmolId()).append("\n");
+                  }
+                  ranks.append("```");
+
+                  final var msg = EmbedCreateSpec.builder()
+                          .title("SmolBot Help")
+                          .author(
+                                  "SmolBot",
+                                  null,
+                                  "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
+                          .description(ranks.toString())
+                          .build();
+                  e.getMessage().getChannel().flatMap(c -> c.createMessage(msg)).block();
+                } else if (e.getMessage().getContent().toLowerCase().startsWith("!averageiq")) {
                   e.getMessage()
                       .getChannel()
                       .flatMap(
@@ -188,7 +232,7 @@ public class DiscordBot {
                         traitsRepository.findDistinctByTypeOrderByValueAsc(parts[1].trim());
                     if (!values.isEmpty()) {
                       StringBuilder output = new StringBuilder();
-                      Map<String, Float> percentages = new HashMap<>();
+                      Map<String, Double> percentages = new HashMap<>();
 
                       for (String value : values) {
                         percentages.put(value, (getTraitRarity(parts[1].trim(), value)));
@@ -198,7 +242,7 @@ public class DiscordBot {
                           percentages.entrySet().stream()
                               .sorted(Map.Entry.comparingByValue())
                               .toList();
-                      for (Map.Entry<String, Float> entry : sorted) {
+                      for (Map.Entry<String, Double> entry : sorted) {
                         output
                             .append(entry.getKey())
                             .append(": ")
@@ -262,13 +306,84 @@ public class DiscordBot {
                     }
                   }
                 }
+                // Uncomment to enable re-generating ranks
+                //                else if(e.getMessage().getContent().equalsIgnoreCase("!genrank"))
+                // {
+                //                  generateRanks();
+                //                }
               });
     }
   }
 
-  private float getTraitRarity(String type, String value) {
+  @Transactional
+  private void generateRanks() {
+    Map<String, Map<String, Double>> rarityCache = new HashMap<>();
+    Map<Long, Double> smolScores = new HashMap<>();
+
+    Set<Long> knownRares = new HashSet<>();
+    knownRares.add(0L);
+    knownRares.add(1690L);
+    knownRares.add(4579L);
+    knownRares.add(5093L);
+
+    for (long x = 0; x <= SMOL_HIGHEST_ID; x++) {
+      double currentScore = 0.0f;
+      List<Trait> traits = traitsRepository.findBySmol_Id(x);
+      for (Trait trait : traits) {
+        Map<String, Double> rarity = rarityCache.get(trait.getType());
+
+        if (rarity == null) {
+          rarity = new HashMap<>();
+        }
+
+        if (!rarity.containsKey(trait.getValue())) {
+          rarity.put(trait.getValue(), getTraitRarity(trait.getType(), trait.getValue()));
+
+          rarityCache.put(trait.getType(), rarity);
+        }
+
+        // Apply weights for rare traits
+        final var percentage = rarityCache.get(trait.getType()).get(trait.getValue());
+        if (knownRares.contains(x)) {
+          // Unique; heavy weight
+          currentScore -= 300.0;
+        } else if (percentage < 0.65d) {
+          currentScore -= 150;
+        } else if (percentage < 0.8d) {
+          currentScore -= 100;
+        }
+
+        currentScore += rarityCache.get(trait.getType()).get(trait.getValue());
+      }
+
+      smolScores.put(x, currentScore);
+    }
+
+    final var sorted = smolScores.entrySet().stream().sorted(Map.Entry.comparingByValue()).toList();
+    double lastRankScore = sorted.get(0).getValue();
+    int currentRank = 1;
+    for (Map.Entry<Long, Double> longDoubleEntry : sorted) {
+      double score = longDoubleEntry.getValue();
+      if (lastRankScore != score) {
+        currentRank++;
+      }
+
+      rarityRankRepository.save(
+          RarityRank.builder()
+              .smolId(longDoubleEntry.getKey())
+              .rank(currentRank)
+              .score(longDoubleEntry.getValue())
+              .build());
+
+      lastRankScore = longDoubleEntry.getValue();
+    }
+
+    log.info("Finished generating ranks");
+  }
+
+  private double getTraitRarity(String type, String value) {
     long count = traitsRepository.countByTypeIgnoreCaseAndValueIgnoreCase(type, value);
-    return ((float) count / (float) SMOL_TOTAL_SUPPLY) * 100.0f;
+    return ((double) count / (double) SMOL_TOTAL_SUPPLY) * 100.0d;
   }
 
   public void printSmol(MessageCreateEvent e, String id) {
@@ -276,9 +391,14 @@ public class DiscordBot {
     output.append("IQ: ").append(treasureService.getIq(Integer.parseInt(id))).append("\n\n");
 
     List<Trait> traits = traitsRepository.findBySmol_Id(Long.parseLong(id));
+    RarityRank rarityRank = rarityRankRepository.findBySmolId(Long.parseLong(id));
 
-    Map<String, Float> percentages = new TreeMap<>();
+    Map<String, Double> percentages = new TreeMap<>();
     for (Trait trait : traits) {
+      if (trait.getType().equalsIgnoreCase("head size")) {
+        continue;
+      }
+
       percentages.put(
           trait.getType() + " - " + trait.getValue(),
           getTraitRarity(trait.getType(), trait.getValue()));
@@ -286,11 +406,21 @@ public class DiscordBot {
 
     final var sorted =
         percentages.entrySet().stream().sorted(Map.Entry.comparingByValue()).toList();
-    for (Map.Entry<String, Float> entry : sorted) {
+    for (Map.Entry<String, Double> entry : sorted) {
+      String marker = "";
+      if (entry.getValue() < 0.009d) {
+        marker = " (Unique)";
+      } else if (entry.getValue() < 0.65d) {
+        marker = " (Ultra rare)";
+      } else if (entry.getValue() < 0.8d) {
+        marker = " (Rare)";
+      }
+
       output
           .append(entry.getKey())
           .append(" ")
           .append(String.format("(%.3f%%)", entry.getValue()))
+          .append(marker)
           .append("\n");
     }
 
@@ -304,13 +434,17 @@ public class DiscordBot {
       final var obj = new JSONObject(response.body()).getString("image");
       final var msg =
           EmbedCreateSpec.builder()
-              .title("SMOL #" + id)
+              .title("SMOL #" + id + "\nRANK: #" + rarityRank.getRank())
               .author(
                   "SmolBot",
                   null,
                   "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
               .image(obj) // Hardcoded to 0 brain size, for now
               .description(output.toString())
+              .addField(
+                  "Ranking Notes",
+                  "Ranking is unofficial. Smols with unique traits are weighted the highest. Traits that occur < %0.65 are weighted 2nd highest, %0.80 third highest",
+                  true)
               .build();
 
       e.getMessage().getChannel().flatMap(c -> c.createMessage(msg)).block();
