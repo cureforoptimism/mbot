@@ -361,6 +361,8 @@ public class DiscordBot {
     knownRares.add(1690L);
     knownRares.add(4579L);
     knownRares.add(5093L);
+    knownRares.add(2430L);
+    knownRares.add(3232L);
 
     for (long x = 0; x <= SMOL_HIGHEST_ID; x++) {
       double currentScore = 0.0f;
@@ -381,8 +383,12 @@ public class DiscordBot {
         // Apply weights for rare traits
         final var percentage = rarityCache.get(trait.getType()).get(trait.getValue());
         if (knownRares.contains(x)) {
-          // Unique; heavy weight
-          currentScore -= 300.0;
+          if(x == 0) {
+            currentScore -= 400.0;
+          } else {
+            // Unique; heavy weight
+            currentScore -= 300.0;
+          }
         } else if (percentage < 0.65d) {
           currentScore -= 150;
         } else if (percentage < 0.8d) {
