@@ -91,7 +91,33 @@ public class DiscordBot {
           .on(MessageCreateEvent.class)
           .subscribe(
               e -> {
-                if (e.getMessage().getContent().toLowerCase().startsWith("!smolhelp")) {
+                if (e.getMessage().getContent().toLowerCase().startsWith("!rank")) {
+                  String[] parts = e.getMessage().getContent().split(" ");
+
+                  if (parts.length == 2) {
+                    log.info("!rank command received");
+                    String rankNumber = parts[1].trim();
+
+                    List<RarityRank> ranks =
+                        rarityRankRepository.findByRank(Integer.parseInt(rankNumber));
+                    if (ranks.size() == 1) {
+                      RarityRank rank = ranks.get(0);
+                      printSmol(e, rank.getSmolId().toString());
+                    } else if (ranks.size() >= 2) {
+                      StringBuilder msg = new StringBuilder();
+                      msg.append("There are multiple Smols with rank ")
+                          .append(rankNumber)
+                          .append(": ");
+                      for (RarityRank rarityRank : ranks) {
+                        msg.append(rarityRank.getSmolId()).append(" ");
+                      }
+                      e.getMessage()
+                          .getChannel()
+                          .flatMap(c -> c.createMessage(msg.toString()))
+                          .block();
+                    }
+                  }
+                } else if (e.getMessage().getContent().toLowerCase().startsWith("!smolhelp")) {
                   String helpMessage =
                       """
                           `!smol <token_id>` - shows your smol, rank, picture, and smol traits/rarities
@@ -100,7 +126,8 @@ public class DiscordBot {
                           `!pfp <token_id>` - Creates an animated gif of a Smol's brain growing (optional: try `!pfp <token_id> reverse`)
                           `!traits` - List all top level traits
                           `!traits <type>` - List all possible trait values, and their rarities
-                          `!top20 - List the top 20 ranked Smols
+                          `!top20` - List the top 20 ranked Smols
+                          `!rank <rank_number>` - Show the smol(s) at specified rank number
                           """;
 
                   final var msg =
@@ -237,7 +264,8 @@ public class DiscordBot {
 
                   if (parts.length == 2) {
                     final var values =
-                        traitsRepository.findDistinctByTypeIgnoreCaseOrderByValueAsc(parts[1].trim());
+                        traitsRepository.findDistinctByTypeIgnoreCaseOrderByValueAsc(
+                            parts[1].trim());
                     if (!values.isEmpty()) {
                       StringBuilder output = new StringBuilder();
                       Map<String, Double> percentages = new HashMap<>();
@@ -442,7 +470,7 @@ public class DiscordBot {
       final var obj = new JSONObject(response.body()).getString("image");
       final var msg =
           EmbedCreateSpec.builder()
-              .title("SMOL #" + id + "\nRANK: #" + rarityRank.getRank())
+              .title("SMOL #" + id + "\nRANK: #" + rarityRank.getRank() + " (WIP)")
               .author(
                   "SmolBot",
                   null,
