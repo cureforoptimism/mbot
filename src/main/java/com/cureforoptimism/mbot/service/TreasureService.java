@@ -1,12 +1,20 @@
 package com.cureforoptimism.mbot.service;
 
-import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
-
 import com.cureforoptimism.mbot.domain.Smol;
 import com.cureforoptimism.mbot.domain.Trait;
 import com.cureforoptimism.mbot.repository.SmolRepository;
 import com.madgag.gif.fmsware.AnimatedGifEncoder;
 import com.smolbrains.SmolBrainsContract;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import javax.imageio.ImageIO;
+import javax.transaction.Transactional;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,15 +30,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.*;
-import javax.imageio.ImageIO;
-import javax.transaction.Transactional;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
+
+import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
 
 @Component
 @Slf4j
@@ -214,8 +215,6 @@ public class TreasureService {
             httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         JSONObject obj =
             new JSONObject(response.body()).getJSONObject("data").getJSONObject("collection");
-        //        final var floorPrice = obj.getBigInteger("floorPrice");
-        //        totalListings = obj.getInt("totalListings");
 
         MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
 
@@ -223,7 +222,6 @@ public class TreasureService {
         boolean cheapestMaleFound = false;
         boolean cheapestFemaleFound = false;
         JSONArray listings = obj.getJSONArray("listings");
-        totalListings = listings.length();
 
         for (int x = 0; x < listings.length(); x++) {
           int tokenId = listings.getJSONObject(x).getJSONObject("token").getInt("tokenId");
@@ -258,6 +256,27 @@ public class TreasureService {
       }
 
       floor = cheapestMale.compareTo(cheapestFemale) > 0 ? cheapestFemale : cheapestMale;
+
+      // Get total listings
+      jsonBody =
+          "{\"query\":\"query getCollectionStats($id: ID!) {\\n  collection(id: $id) {\\n    floorPrice\\n    totalListings\\n    totalVolume\\n    listings(where: {status: Active}) {\\n      token {\\n        floorPrice\\n        name\\n      }\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\"},\"operationName\":\"getCollectionStats\"}";
+      request =
+          HttpRequest.newBuilder(
+                  new URI("https://api.thegraph.com/subgraphs/name/wyze/treasure-marketplace"))
+              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+              .header("Content-Type", "application/json")
+              .build();
+      try {
+        HttpResponse<String> response =
+            httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        JSONObject obj =
+            new JSONObject(response.body()).getJSONObject("data").getJSONObject("collection");
+
+        totalListings = obj.getInt("totalListings");
+      } catch (InterruptedException ex) {
+        // Whatever; it'll retry
+        return;
+      }
 
       jsonBody =
           "{\"query\":\"query getCollectionStats($id: ID!) {\\n  collection(id: $id) {\\n    floorPrice\\n    totalListings\\n    totalVolume\\n    listings(where: {status: Active}) {\\n      token {\\n        floorPrice\\n        name\\n      }\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0xd666d1cc3102cd03e07794a61e5f4333b4239f53\"},\"operationName\":\"getCollectionStats\"}";
