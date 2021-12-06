@@ -363,6 +363,7 @@ public class DiscordBot {
     knownRares.add(5093L);
     knownRares.add(2430L);
     knownRares.add(3232L);
+    knownRares.add(3391L);
 
     for (long x = 0; x <= SMOL_HIGHEST_ID; x++) {
       double currentScore = 0.0f;
