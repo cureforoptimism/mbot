@@ -92,42 +92,50 @@ public class DiscordBot {
           .subscribe(
               e -> {
                 if (e.getMessage().getContent().toLowerCase().startsWith("!smolhelp")) {
-                  String helpMessage = """
+                  String helpMessage =
+                      """
                           `!smol <token_id>` - shows your smol, rank, picture, and smol traits/rarities
                           `!averageiq` - shows the average Smol IQ across the Smoliverse
                           `!floor` - Shows the current floor price of Smols on the Treasure marketplace
                           `!pfp <token_id>` - Creates an animated gif of a Smol's brain growing (optional: try `!pfp <token_id> reverse`)
                           `!traits` - List all top level traits
                           `!traits <type>` - List all possible trait values, and their rarities
+                          `!top20 - List the top 20 ranked Smols
                           """;
 
-                  final var msg = EmbedCreateSpec.builder()
-                      .title("SmolBot Help")
-                      .author(
-                          "SmolBot",
-                          null,
-                          "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
-                      .description(helpMessage)
-                      .addField(
-                          "Note: ",
-                          "This bot developed for fun by `Cure For Optimism#5061`, and is unofficial. Smol admins aren't associated with this bot and can't help you with issues. Ping smol cureForOptimism with any feedback/questions",
-                          false)
-                      .build();
+                  final var msg =
+                      EmbedCreateSpec.builder()
+                          .title("SmolBot Help")
+                          .author(
+                              "SmolBot",
+                              null,
+                              "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
+                          .description(helpMessage)
+                          .addField(
+                              "Note: ",
+                              "This bot developed for fun by `Cure For Optimism#5061`, and is unofficial. Smol admins aren't associated with this bot and can't help you with issues. Ping smol cureForOptimism with any feedback/questions",
+                              false)
+                          .build();
                   e.getMessage().getChannel().flatMap(c -> c.createMessage(msg)).block();
-                  } else if(e.getMessage().getContent().toLowerCase().startsWith("!top20")) {
+                } else if (e.getMessage().getContent().toLowerCase().startsWith("!top20")) {
                   StringBuilder ranks = new StringBuilder("```");
                   Set<RarityRank> rarities = rarityRankRepository.findTop20();
-                  for(RarityRank rarityRank : rarities) {
-                    ranks.append(rarityRank.getRank()).append(": #").append(rarityRank.getSmolId()).append("\n");
+                  for (RarityRank rarityRank : rarities) {
+                    ranks
+                        .append(rarityRank.getRank())
+                        .append(": #")
+                        .append(rarityRank.getSmolId())
+                        .append("\n");
                   }
                   ranks.append("```");
 
-                  final var msg = EmbedCreateSpec.builder()
-                          .title("SmolBot Help")
+                  final var msg =
+                      EmbedCreateSpec.builder()
+                          .title("Top 20 Smols")
                           .author(
-                                  "SmolBot",
-                                  null,
-                                  "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
+                              "SmolBot",
+                              null,
+                              "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
                           .description(ranks.toString())
                           .build();
                   e.getMessage().getChannel().flatMap(c -> c.createMessage(msg)).block();
@@ -229,7 +237,7 @@ public class DiscordBot {
 
                   if (parts.length == 2) {
                     final var values =
-                        traitsRepository.findDistinctByTypeOrderByValueAsc(parts[1].trim());
+                        traitsRepository.findDistinctByTypeIgnoreCaseOrderByValueAsc(parts[1].trim());
                     if (!values.isEmpty()) {
                       StringBuilder output = new StringBuilder();
                       Map<String, Double> percentages = new HashMap<>();
