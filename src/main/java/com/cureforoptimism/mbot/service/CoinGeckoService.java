@@ -17,12 +17,16 @@ public class CoinGeckoService {
 
   @Scheduled(fixedDelay = 30000)
   public void refreshMagicPrice() {
+    try {
     final var priceMap = client.getPrice("magic", "usd", false, false, true, false);
     if (priceMap.containsKey("magic")
         && priceMap.get("magic").containsKey("usd")
         && priceMap.get("magic").containsKey("usd_24h_change")) {
       discordClient.refreshMagicPrice(
           priceMap.get("magic").get("usd"), priceMap.get("magic").get("usd_24h_change"));
+    }
+    } catch (Exception ex) {
+      // Ignore, it'll retry
     }
   }
 }
