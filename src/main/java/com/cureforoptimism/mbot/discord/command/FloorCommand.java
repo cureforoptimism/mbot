@@ -87,8 +87,6 @@ public class FloorCommand implements MbotCommand {
             .nextCell("MAGIC")
             .applyToCell(HORIZONTAL_CENTER.withWidth(12))
             .nextCell("USD")
-            .applyToCell(HORIZONTAL_CENTER.withWidth(12))
-            .nextCell("ID")
             .applyToCell(HORIZONTAL_CENTER.withWidth(12));
 
     table
@@ -97,9 +95,7 @@ public class FloorCommand implements MbotCommand {
         .nextCell(String.format("%.2f", magicFloor))
         .applyToCell(RIGHT_ALIGN.withWidth(12))
         .nextCell(String.format("$%.2f", usdFloor))
-        .applyToCell(RIGHT_ALIGN.withWidth(12))
-        .nextCell("n/a")
-        .applyToCell(HORIZONTAL_CENTER.withWidth(12));
+        .applyToCell(RIGHT_ALIGN.withWidth(12));
 
     table
         .nextRow()
@@ -107,9 +103,7 @@ public class FloorCommand implements MbotCommand {
         .nextCell(String.format("%.2f", landFloor))
         .applyToCell(RIGHT_ALIGN.withWidth(12))
         .nextCell(String.format("$%.2f", usdLandFloor))
-        .applyToCell(RIGHT_ALIGN.withWidth(12))
-        .nextCell("n/a")
-        .applyToCell(HORIZONTAL_CENTER.withWidth(12));
+        .applyToCell(RIGHT_ALIGN.withWidth(12));
 
     table
         .nextRow()
@@ -117,9 +111,7 @@ public class FloorCommand implements MbotCommand {
         .nextCell(String.format("%.2f", cheapestMale))
         .applyToCell(RIGHT_ALIGN.withWidth(12))
         .nextCell(String.format("$%.2f", usdCheapestMale))
-        .applyToCell(RIGHT_ALIGN.withWidth(12))
-        .nextCell(String.valueOf(cheapestMaleId))
-        .applyToCell(HORIZONTAL_CENTER.withWidth(12));
+        .applyToCell(RIGHT_ALIGN.withWidth(12));
 
     table
         .nextRow()
@@ -127,9 +119,7 @@ public class FloorCommand implements MbotCommand {
         .nextCell(String.format("%.2f", cheapestFemale))
         .applyToCell(RIGHT_ALIGN.withWidth(12))
         .nextCell(String.format("$%.2f", usdCheapestFemale))
-        .applyToCell(RIGHT_ALIGN.withWidth(12))
-        .nextCell(String.valueOf(cheapestFemaleId))
-        .applyToCell(HORIZONTAL_CENTER.withWidth(12));
+        .applyToCell(RIGHT_ALIGN.withWidth(12));
 
     table
         .nextRow()
@@ -137,9 +127,7 @@ public class FloorCommand implements MbotCommand {
         .nextCell(String.format("%.2f", cheapestPair))
         .applyToCell(RIGHT_ALIGN.withWidth(12))
         .nextCell(String.format("$%.2f", usdCheapestPair))
-        .applyToCell(RIGHT_ALIGN.withWidth(12))
-        .nextCell("n/a")
-        .applyToCell(HORIZONTAL_CENTER.withWidth(12));
+        .applyToCell(RIGHT_ALIGN.withWidth(12));
 
     table
         .nextRow()
@@ -147,14 +135,16 @@ public class FloorCommand implements MbotCommand {
         .nextCell(String.format("%.2f", cheapestPair.add(landFloor)))
         .applyToCell(RIGHT_ALIGN.withWidth(12))
         .nextCell(String.format("$%.2f", usdCheapestPair.add(usdLandFloor)))
-        .applyToCell(RIGHT_ALIGN.withWidth(12))
-        .nextCell("n/a")
-        .applyToCell(HORIZONTAL_CENTER.withWidth(12));
+        .applyToCell(RIGHT_ALIGN.withWidth(12));
 
     final var output =
         String.format(
-            "Total SMOL listings: %d (%d LAND)\n```\n%s```\n",
-            totalListings, totalLandListings, Utilities.simpleTableToString(table));
+            "Total SMOL listings: %d (%d LAND)\nCheapest Male ID: #%d, Cheapest Female ID: #%d```\n%s```\n",
+            totalListings,
+            totalLandListings,
+            cheapestMaleId,
+            cheapestFemaleId,
+            Utilities.simpleTableToString(table));
 
     return event
         .getMessage()
@@ -163,7 +153,7 @@ public class FloorCommand implements MbotCommand {
             c ->
                 c.createMessage(
                     EmbedCreateSpec.builder()
-                        .title("Smol Floor - Treasure Marketplace")
+                        .title("Smol Floor - Treasure Marketplace\nMAGIC: $" + currentPrice)
                         .author(
                             "SmolBot",
                             null,
