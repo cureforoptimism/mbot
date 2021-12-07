@@ -2,6 +2,6 @@ FROM amazoncorretto:17
 
 ADD . /mbot
 WORKDIR mbot
-RUN ./gradlew bootjar
+RUN ./gradlew bootJar
 
-ENTRYPOINT java -jar build/libs/mbot-0.0.1-SNAPSHOT.jar
+CMD java -jar /mbot/build/libs/mbot-1.0-SNAPSHOT.jar
