@@ -40,10 +40,20 @@ public class Utilities {
 
   public Optional<EmbedCreateSpec> getSmolEmbed(String id) {
     StringBuilder output = new StringBuilder();
-    output.append("IQ: ").append(treasureService.getIq(Integer.parseInt(id))).append("\n\n");
+    int smolId;
+    long smolLongId;
 
-    List<Trait> traits = traitsRepository.findBySmol_Id(Long.parseLong(id));
-    RarityRank rarityRank = rarityRankRepository.findBySmolId(Long.parseLong(id));
+    try {
+      smolId = Integer.parseInt(id);
+      smolLongId = Long.parseLong(id);
+    } catch (NumberFormatException ex) {
+      return Optional.empty();
+    }
+
+    output.append("IQ: ").append(treasureService.getIq(smolId)).append("\n\n");
+
+    List<Trait> traits = traitsRepository.findBySmol_Id(smolLongId);
+    RarityRank rarityRank = rarityRankRepository.findBySmolId(smolLongId);
 
     Map<String, Double> percentages = new TreeMap<>();
     for (Trait trait : traits) {

@@ -19,30 +19,34 @@ public class MbotCommandListener {
   }
 
   public void handle(MessageCreateEvent event) {
-    String message = event.getMessage().getContent().toLowerCase();
-    if (!message.startsWith("!")) {
-      return;
-    }
+    try {
+      String message = event.getMessage().getContent().toLowerCase();
+      if (!message.startsWith("!")) {
+        return;
+      }
 
-    // Trim leading !
-    String[] parts = message.split(" ");
-    if (parts.length > 0) {
-      String commandName = parts[0].substring(1);
+      // Trim leading !
+      String[] parts = message.split(" ");
+      if (parts.length > 0) {
+        String commandName = parts[0].substring(1);
 
-      Flux.fromIterable(commands)
-          .filter(command -> command.getName().equals(commandName))
-          .next()
-          .flatMap(
-              command -> {
-                // Verify that this is a message in a server and not a DM (for now)
-                Message msg = event.getMessage();
-                if (msg.getGuildId().isEmpty()) {
-                  return Mono.empty();
-                }
+        Flux.fromIterable(commands)
+            .filter(command -> command.getName().equals(commandName))
+            .next()
+            .flatMap(
+                command -> {
+                  // Verify that this is a message in a server and not a DM (for now)
+                  Message msg = event.getMessage();
+                  if (msg.getGuildId().isEmpty()) {
+                    return Mono.empty();
+                  }
 
-                return command.handle(event);
-              })
-          .block();
+                  return command.handle(event);
+                })
+            .block();
+      }
+    } catch (Exception ex) {
+      log.error("Error received in listener loop. Will resume.");
     }
   }
 }
