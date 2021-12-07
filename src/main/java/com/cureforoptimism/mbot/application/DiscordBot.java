@@ -1,6 +1,7 @@
 package com.cureforoptimism.mbot.application;
 
 import com.cureforoptimism.mbot.discord.events.RefreshEvent;
+import com.cureforoptimism.mbot.discord.listener.MbotCommandListener;
 import com.cureforoptimism.mbot.domain.RarityRank;
 import com.cureforoptimism.mbot.domain.Trait;
 import com.cureforoptimism.mbot.repository.RarityRankRepository;
@@ -9,6 +10,7 @@ import com.cureforoptimism.mbot.repository.TraitsRepository;
 import com.cureforoptimism.mbot.service.TokenService;
 import com.cureforoptimism.mbot.service.TreasureService;
 import com.smolbrains.SmolBrainsContract;
+import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
@@ -18,6 +20,9 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
+import org.reactivestreams.Publisher;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +45,7 @@ import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
 
 @Component
 @Slf4j
-public class DiscordBot {
+public class DiscordBot implements ApplicationRunner {
   final Web3j web3j;
   final ApplicationContext context;
   final GatewayDiscordClient client;
@@ -247,6 +252,7 @@ public class DiscordBot {
                       return;
                     }
 
+                    try {
                     ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(image);
                     e.getMessage()
                         .getChannel()
@@ -257,6 +263,7 @@ public class DiscordBot {
                                         .addFile(tokenId + ".gif", byteArrayInputStream)
                                         .build()))
                         .block();
+                    } catch (Exception ignored) {}
                   }
                 } else if (e.getMessage().getContent().startsWith("!traits")) {
                   log.info("!traits called");
@@ -357,13 +364,14 @@ public class DiscordBot {
     Map<Long, Double> smolScores = new HashMap<>();
 
     Set<Long> knownRares = new HashSet<>();
-    knownRares.add(0L);
+    knownRares.add(0L); // spacesuit
     knownRares.add(1690L);
     knownRares.add(4579L);
     knownRares.add(5093L);
     knownRares.add(2430L);
-    knownRares.add(3232L);
+    knownRares.add(3232L); // brain
     knownRares.add(3391L);
+    knownRares.add(5203L); // gold
 
     for (long x = 0; x <= SMOL_HIGHEST_ID; x++) {
       double currentScore = 0.0f;
@@ -499,5 +507,22 @@ public class DiscordBot {
     currentPrice = price;
     currentChange = usd24HChange;
     client.getEventDispatcher().publish(new RefreshEvent(null, null));
+  }
+
+  @Override
+  public void run(ApplicationArguments args) {
+    MbotCommandListener cbotCommandListener = new MbotCommandListener(context);
+
+    DiscordClient.create(tokenService.getDiscordToken())
+            .gateway()
+            .setInitialPresence(p -> ClientPresence.online(ClientActivity.playing("c0d3z...")))
+            .withGateway(
+                    gatewayClient -> {
+                      final Publisher<?> messageEvent =
+                              gatewayClient.on(MessageCreateEvent.class, cbotCommandListener::handle);
+
+                      return Mono.when(messageEvent);
+                    })
+            .block();
   }
 }
