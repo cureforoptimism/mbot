@@ -5,9 +5,11 @@ import discord4j.core.object.entity.Message;
 import reactor.core.publisher.Mono;
 
 public interface MbotCommand {
-    String getName();
+  String getName();
 
-    String getDescription();
+  String getDescription();
 
-    Mono<Message> handle(MessageCreateEvent event);
+  String getUsage();
+
+  Mono<Message> handle(MessageCreateEvent event);
 }
