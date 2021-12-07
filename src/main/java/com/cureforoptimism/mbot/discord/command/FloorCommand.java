@@ -1,7 +1,9 @@
 package com.cureforoptimism.mbot.discord.command;
 
+import com.cureforoptimism.mbot.Utilities;
 import com.cureforoptimism.mbot.application.DiscordBot;
 import com.cureforoptimism.mbot.service.TreasureService;
+import com.inamik.text.tables.SimpleTable;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
@@ -11,6 +13,9 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
+
+import static com.inamik.text.tables.Cell.Functions.HORIZONTAL_CENTER;
+import static com.inamik.text.tables.Cell.Functions.RIGHT_ALIGN;
 
 @Component
 @AllArgsConstructor
@@ -53,23 +58,103 @@ public class FloorCommand implements MbotCommand {
     final var cheapestFemaleId = treasureService.getCheapestFemaleId();
     final var cheapestPair = cheapestFemale.add(cheapestMale);
     final var usdCheapestPair = cheapestPair.multiply(BigDecimal.valueOf(currentPrice));
+    //    final var output =
+    //        String.format(
+    //            "```\nSMOL      - MAGIC: %.2f ($%.2f). Total listings: %d.\nSMOL Land - MAGIC:
+    // %.2f ($%.2f). Total listings: %d.\nCheapest male (#%d)      - MAGIC: %.2f ($%.2f).\nCheapest
+    // female (#%d)   - MAGIC: %.2f ($%.2f).\nCheapest pair              - MAGIC: %.2f
+    // ($%.2f).\n```",
+    //            magicFloor,
+    //            usdFloor,
+    //            totalListings,
+    //            landFloor,
+    //            usdLandFloor,
+    //            totalLandListings,
+    //            cheapestMaleId,
+    //            cheapestMale,
+    //            usdCheapestMale,
+    //            cheapestFemaleId,
+    //            cheapestFemale,
+    //            usdCheapestFemale,
+    //            cheapestPair,
+    //            usdCheapestPair);
+
+    final SimpleTable table =
+        new SimpleTable()
+            .nextRow()
+            .nextCell("TYPE")
+            .applyToCell(HORIZONTAL_CENTER.withWidth(12))
+            .nextCell("MAGIC")
+            .applyToCell(HORIZONTAL_CENTER.withWidth(12))
+            .nextCell("USD")
+            .applyToCell(HORIZONTAL_CENTER.withWidth(12))
+            .nextCell("ID")
+            .applyToCell(HORIZONTAL_CENTER.withWidth(12));
+
+    table
+        .nextRow()
+        .nextCell("SMOL")
+        .nextCell(String.format("%.2f", magicFloor))
+        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("$%.2f", usdFloor))
+        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell("n/a")
+        .applyToCell(HORIZONTAL_CENTER.withWidth(12));
+
+    table
+        .nextRow()
+        .nextCell("LAND")
+        .nextCell(String.format("%.2f", landFloor))
+        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("$%.2f", usdLandFloor))
+        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell("n/a")
+        .applyToCell(HORIZONTAL_CENTER.withWidth(12));
+
+    table
+        .nextRow()
+        .nextCell("MALE")
+        .nextCell(String.format("%.2f", cheapestMale))
+        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("$%.2f", usdCheapestMale))
+        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.valueOf(cheapestMaleId))
+        .applyToCell(HORIZONTAL_CENTER.withWidth(12));
+
+    table
+        .nextRow()
+        .nextCell("FEMALE")
+        .nextCell(String.format("%.2f", cheapestFemale))
+        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("$%.2f", usdCheapestFemale))
+        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.valueOf(cheapestFemaleId))
+        .applyToCell(HORIZONTAL_CENTER.withWidth(12));
+
+    table
+        .nextRow()
+        .nextCell("PAIR")
+        .nextCell(String.format("%.2f", cheapestPair))
+        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("$%.2f", usdCheapestPair))
+        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell("n/a")
+        .applyToCell(HORIZONTAL_CENTER.withWidth(12));
+
+    table
+        .nextRow()
+        .nextCell("PAIR+LAND")
+        .nextCell(String.format("%.2f", cheapestPair.add(landFloor)))
+        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("$%.2f", usdCheapestPair.add(usdLandFloor)))
+        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell("n/a")
+        .applyToCell(HORIZONTAL_CENTER.withWidth(12));
+
     final var output =
         String.format(
-            "```\nSMOL      - MAGIC: %.2f ($%.2f). Total listings: %d.\nSMOL Land - MAGIC: %.2f ($%.2f). Total listings: %d.\nCheapest male (#%d)      - MAGIC: %.2f ($%.2f).\nCheapest female (#%d)   - MAGIC: %.2f ($%.2f).\nCheapest pair              - MAGIC: %.2f ($%.2f).\n```",
-            magicFloor,
-            usdFloor,
-            totalListings,
-            landFloor,
-            usdLandFloor,
-            totalLandListings,
-            cheapestMaleId,
-            cheapestMale,
-            usdCheapestMale,
-            cheapestFemaleId,
-            cheapestFemale,
-            usdCheapestFemale,
-            cheapestPair,
-            usdCheapestPair);
+            "Total SMOL listings: %d (%d LAND)\n```\n%s```\n",
+            totalListings, totalLandListings, Utilities.simpleTableToString(table));
 
     return event
         .getMessage()

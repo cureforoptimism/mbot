@@ -1,25 +1,33 @@
 package com.cureforoptimism.mbot;
 
-import static com.cureforoptimism.mbot.Constants.SMOL_HIGHEST_ID;
-import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
-
 import com.cureforoptimism.mbot.domain.RarityRank;
 import com.cureforoptimism.mbot.domain.Trait;
 import com.cureforoptimism.mbot.repository.RarityRankRepository;
 import com.cureforoptimism.mbot.repository.TraitsRepository;
 import com.cureforoptimism.mbot.service.TreasureService;
+import com.inamik.text.tables.GridTable;
+import com.inamik.text.tables.SimpleTable;
+import com.inamik.text.tables.grid.Border;
+import com.inamik.text.tables.grid.Util;
 import com.smolbrains.SmolBrainsContract;
 import discord4j.core.spec.EmbedCreateSpec;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.*;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+
+import static com.cureforoptimism.mbot.Constants.SMOL_HIGHEST_ID;
+import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
 
 @Component
 @AllArgsConstructor
@@ -175,5 +183,18 @@ public class Utilities {
     }
 
     log.info("Finished generating ranks");
+  }
+
+  public static String simpleTableToString(SimpleTable simpleTable) {
+    GridTable gridTable = simpleTable.toGrid();
+    gridTable = Border.of(Border.Chars.of('+', '-', '|')).apply(gridTable);
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    PrintStream printStream = new PrintStream(baos);
+    Util.print(gridTable, printStream);
+
+    String response;
+    response = baos.toString(StandardCharsets.UTF_8);
+
+    return response;
   }
 }
