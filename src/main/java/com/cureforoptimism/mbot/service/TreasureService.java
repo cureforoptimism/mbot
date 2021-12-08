@@ -1,12 +1,20 @@
 package com.cureforoptimism.mbot.service;
 
-import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
-
 import com.cureforoptimism.mbot.domain.Smol;
 import com.cureforoptimism.mbot.domain.Trait;
 import com.cureforoptimism.mbot.repository.SmolRepository;
 import com.madgag.gif.fmsware.AnimatedGifEncoder;
 import com.smolbrains.SmolBrainsContract;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import javax.imageio.ImageIO;
+import javax.transaction.Transactional;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,15 +30,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.*;
-import javax.imageio.ImageIO;
-import javax.transaction.Transactional;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
+
+import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
 
 @Component
 @Slf4j
@@ -115,7 +116,7 @@ public class TreasureService {
     return smolRepository.countByTraits_TypeAndTraits_Value(trait, value);
   }
 
-  public byte[] getAnimatedGif(String tokenId, boolean reverse) {
+  public byte[] getAnimatedGif(String tokenId, boolean reverse, int msDelay) {
     try {
       String baseUri = smolBrainsContract.baseURI().send();
       HttpClient httpClient = HttpClient.newHttpClient();
@@ -124,7 +125,7 @@ public class TreasureService {
       AnimatedGifEncoder gifEncoder = new AnimatedGifEncoder();
       gifEncoder.start(finishedImage);
       gifEncoder.setRepeat(0);
-      gifEncoder.setDelay(1000);
+      gifEncoder.setDelay(msDelay);
 
       List<BufferedImage> images = new ArrayList<>();
 

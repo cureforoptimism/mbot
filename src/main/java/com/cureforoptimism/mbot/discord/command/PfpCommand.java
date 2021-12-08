@@ -4,11 +4,12 @@ import com.cureforoptimism.mbot.service.TreasureService;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.MessageCreateSpec;
-import java.io.ByteArrayInputStream;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+
+import java.io.ByteArrayInputStream;
 
 @Component
 @AllArgsConstructor
@@ -23,12 +24,12 @@ public class PfpCommand implements MbotCommand {
 
   @Override
   public String getDescription() {
-    return "Creates an animated gif of a Smol's brain growing (optional: try `!pfp <token_id> reverse`)";
+    return "Creates an animated gif of a Smol's brain growing (optional: try `!pfp <token_id> reverse`, `!pfp <token_id> faster`, `!pfp <token_id> faster faster faster reverse`)";
   }
 
   @Override
   public String getUsage() {
-    return "<token_id>";
+    return "<token_id> [reverse] [faster...]";
   }
 
   @Override
@@ -37,12 +38,27 @@ public class PfpCommand implements MbotCommand {
 
     String msg = event.getMessage().getContent();
     String[] parts = msg.split(" ");
+    int msDelay = 1000; // 1 fps
+    boolean reverse = false;
 
-    if (parts.length == 2 || parts.length == 3) {
+    if (parts.length >= 2) {
       String tokenId = parts[1];
-      boolean reverse = parts.length != 2;
 
-      final var image = treasureService.getAnimatedGif(tokenId, reverse);
+      for (String part : parts) {
+        if (part.equalsIgnoreCase("reverse")) {
+          reverse = true;
+        } else if (part.equalsIgnoreCase("faster")) {
+          // No idea how low this can actually go, but may as well set a limit so we don't go
+          // negative
+          if (msDelay - 250 > 25) {
+            msDelay -= 250;
+          } else {
+            msDelay = 25;
+          }
+        }
+      }
+
+      final var image = treasureService.getAnimatedGif(tokenId, reverse, msDelay);
       if (image == null) {
         return event
             .getMessage()
