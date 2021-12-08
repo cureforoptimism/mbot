@@ -3,9 +3,7 @@ package com.cureforoptimism.mbot;
 import com.litesoftwares.coingecko.CoinGeckoApiClient;
 import com.litesoftwares.coingecko.impl.CoinGeckoApiClientImpl;
 import com.smolbrains.SmolBrainsContract;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
+import com.smolbrains.SmolBrainsVroomContract;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +15,10 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
+
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 
 @Slf4j
 @Configuration
@@ -31,6 +33,26 @@ public class SpringConfiguration {
   @Bean
   public Web3j web3j() {
     return Web3j.build(new HttpService("https://arb1.arbitrum.io/rpc"));
+  }
+
+  @Bean
+  public SmolBrainsVroomContract smolBrainsVroomContract() {
+    ContractGasProvider contractGasProvider = new DefaultGasProvider();
+
+    try {
+      Credentials dummyCredentials = Credentials.create(Keys.createEcKeyPair());
+      return SmolBrainsVroomContract.load(
+          "0xB16966daD2B5a5282b99846B23dcDF8C47b6132C",
+          web3j(),
+          dummyCredentials,
+          contractGasProvider);
+
+    } catch (InvalidAlgorithmParameterException
+        | NoSuchAlgorithmException
+        | NoSuchProviderException ex) {
+      log.error("unable to create dummy credentials", ex);
+      return null;
+    }
   }
 
   @Bean

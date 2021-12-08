@@ -58,26 +58,10 @@ public class FloorCommand implements MbotCommand {
     final var cheapestFemaleId = treasureService.getCheapestFemaleId();
     final var cheapestPair = cheapestFemale.add(cheapestMale);
     final var usdCheapestPair = cheapestPair.multiply(BigDecimal.valueOf(currentPrice));
-    //    final var output =
-    //        String.format(
-    //            "```\nSMOL      - MAGIC: %.2f ($%.2f). Total listings: %d.\nSMOL Land - MAGIC:
-    // %.2f ($%.2f). Total listings: %d.\nCheapest male (#%d)      - MAGIC: %.2f ($%.2f).\nCheapest
-    // female (#%d)   - MAGIC: %.2f ($%.2f).\nCheapest pair              - MAGIC: %.2f
-    // ($%.2f).\n```",
-    //            magicFloor,
-    //            usdFloor,
-    //            totalListings,
-    //            landFloor,
-    //            usdLandFloor,
-    //            totalLandListings,
-    //            cheapestMaleId,
-    //            cheapestMale,
-    //            usdCheapestMale,
-    //            cheapestFemaleId,
-    //            cheapestFemale,
-    //            usdCheapestFemale,
-    //            cheapestPair,
-    //            usdCheapestPair);
+    final var cheapestVroom = treasureService.getCheapestVroom();
+    final var cheapestVroomId = treasureService.getCheapestVroomId();
+    final var usdCheapestVroom = cheapestVroom.multiply(BigDecimal.valueOf(currentPrice));
+    final var totalVroomListings = treasureService.getTotalVroomListings();
 
     final SimpleTable table =
         new SimpleTable()
@@ -123,6 +107,14 @@ public class FloorCommand implements MbotCommand {
 
     table
         .nextRow()
+        .nextCell("VROOM")
+        .nextCell(String.format("%.2f", cheapestVroom))
+        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("$%.2f", usdCheapestVroom))
+        .applyToCell(RIGHT_ALIGN.withWidth(12));
+
+    table
+        .nextRow()
         .nextCell("PAIR")
         .nextCell(String.format("%.2f", cheapestPair))
         .applyToCell(RIGHT_ALIGN.withWidth(12))
@@ -137,13 +129,23 @@ public class FloorCommand implements MbotCommand {
         .nextCell(String.format("$%.2f", usdCheapestPair.add(usdLandFloor)))
         .applyToCell(RIGHT_ALIGN.withWidth(12));
 
+    table
+        .nextRow()
+        .nextCell("PAIR+LAND+VROOM")
+        .nextCell(String.format("%.2f", cheapestPair.add(landFloor).add(cheapestVroom)))
+        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("$%.2f", usdCheapestPair.add(usdLandFloor).add(usdCheapestVroom)))
+        .applyToCell(RIGHT_ALIGN.withWidth(12));
+
     final var output =
         String.format(
-            "Total SMOL listings: %d (%d LAND)\nCheapest Male ID: #%d, Cheapest Female ID: #%d```\n%s```\n",
+            "Total SMOL listings: %d (%d LAND, %d VROOM)\nCheapest Male ID: #%d, Cheapest Female ID: #%d\nCheapest Vroom ID: #%d```\n%s```\n",
             totalListings,
             totalLandListings,
+            totalVroomListings,
             cheapestMaleId,
             cheapestFemaleId,
+            cheapestVroomId,
             Utilities.simpleTableToString(table));
 
     return event
