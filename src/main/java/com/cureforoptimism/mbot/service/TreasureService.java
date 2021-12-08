@@ -44,12 +44,15 @@ public class TreasureService {
   private final SmolBrainsVroomContract smolBrainsVroomContract;
   @Getter private BigDecimal floor;
   @Getter private int totalListings;
+  @Getter private int totalVroomListings;
   @Getter private BigDecimal landFloor;
   @Getter private int totalFloorListings;
   @Getter private BigDecimal cheapestMale;
   @Getter private BigDecimal cheapestFemale;
+  @Getter private BigDecimal cheapestVroom;
   @Getter private int cheapestMaleId;
   @Getter private int cheapestFemaleId;
+  @Getter private int cheapestVroomId;
   private final Map<String, Map<String, Integer>> rarityMap;
   final SmolRepository smolRepository;
   final VroomTraitsRepository vroomTraitsRepository;
@@ -346,6 +349,54 @@ public class TreasureService {
       } catch (InterruptedException | JSONException ex) {
         log.warn("Error parsing treasure response", ex);
       }
+
+      // Get vroom total listings/floor
+      jsonBody =
+          "{\"query\":\"query getCollectionStats($id: ID!) {\\n  collection(id: $id) {\\n    floorPrice\\n    totalListings\\n    totalVolume\\n    listings(where: {status: Active}) {\\n      token {\\n        floorPrice\\n        name\\n      }\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0xb16966dad2b5a5282b99846b23dcdf8c47b6132c\"},\"operationName\":\"getCollectionStats\"}";
+      request =
+          HttpRequest.newBuilder(
+                  new URI("https://api.thegraph.com/subgraphs/name/wyze/treasure-marketplace"))
+              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+              .header("Content-Type", "application/json")
+              .build();
+
+      try {
+        HttpResponse<String> response =
+            httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        JSONObject obj =
+            new JSONObject(response.body()).getJSONObject("data").getJSONObject("collection");
+
+        totalVroomListings = obj.getInt("totalListings");
+      } catch (InterruptedException ex) {
+        // Whatever; it'll retry
+        return;
+      }
+
+      jsonBody =
+          "{\"query\":\"query getCollectionListings($id: ID!, $orderDirection: OrderDirection!, $tokenName: String, $skipBy: Int!, $first: Int!, $orderBy: Listing_orderBy!, $isERC1155: Boolean!) {\\n  collection(id: $id) {\\n    name\\n    address\\n    standard\\n    tokens(\\n      orderBy: floorPrice\\n      orderDirection: $orderDirection\\n      where: {name_contains: $tokenName}\\n    ) @include(if: $isERC1155) {\\n      id\\n      name\\n      tokenId\\n      listings(where: {status: Active}, orderBy: pricePerItem) {\\n        pricePerItem\\n        quantity\\n      }\\n      metadata {\\n        image\\n        name\\n        description\\n      }\\n    }\\n    listings(\\n      first: $first\\n      skip: $skipBy\\n      orderBy: $orderBy\\n      orderDirection: $orderDirection\\n      where: {status: Active, tokenName_contains: $tokenName}\\n    ) @skip(if: $isERC1155) {\\n      user {\\n        id\\n      }\\n      expires\\n      id\\n      pricePerItem\\n      token {\\n        tokenId\\n        metadata {\\n          image\\n          name\\n          description\\n        }\\n        name\\n      }\\n      quantity\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0xb16966dad2b5a5282b99846b23dcdf8c47b6132c\",\"isERC1155\":false,\"tokenName\":\"\",\"skipBy\":0,\"first\":42,\"orderBy\":\"pricePerItem\",\"orderDirection\":\"asc\"},\"operationName\":\"getCollectionListings\"}";
+      request =
+          HttpRequest.newBuilder(
+                  new URI("https://api.thegraph.com/subgraphs/name/wyze/treasure-marketplace"))
+              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+              .header("Content-Type", "application/json")
+              .build();
+
+      try {
+        MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
+
+        HttpResponse<String> response =
+            httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        JSONObject obj =
+            new JSONObject(response.body()).getJSONObject("data").getJSONObject("collection");
+
+        JSONObject firstListing = obj.getJSONArray("listings").getJSONObject(0);
+        final var price = firstListing.getBigInteger("pricePerItem");
+        this.cheapestVroom = new BigDecimal(price, 18, mc);
+        this.cheapestVroomId = firstListing.getJSONObject("token").getInt("tokenId");
+      } catch (InterruptedException ex) {
+        // Whatever; it'll retry
+      }
+
     } catch (IOException | URISyntaxException ex) {
       log.warn("Failed to retrieve treasure: ", ex);
     }
