@@ -1,11 +1,12 @@
 package com.cureforoptimism.mbot.domain;
 
-import java.util.Set;
-import javax.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import javax.persistence.*;
+import java.util.Set;
 
 @Entity
 @NoArgsConstructor
@@ -17,4 +18,8 @@ public class Smol {
   @Getter
   @OneToMany(fetch = FetchType.EAGER, mappedBy = "smol", cascade = CascadeType.ALL)
   Set<Trait> traits;
+
+  @Getter
+  @OneToMany(fetch = FetchType.EAGER, mappedBy = "smol", cascade = CascadeType.ALL)
+  Set<VroomTrait> vroomTraits;
 }
