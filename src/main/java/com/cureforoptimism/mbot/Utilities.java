@@ -1,5 +1,8 @@
 package com.cureforoptimism.mbot;
 
+import static com.cureforoptimism.mbot.Constants.SMOL_HIGHEST_ID;
+import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
+
 import com.cureforoptimism.mbot.domain.RarityRank;
 import com.cureforoptimism.mbot.domain.Trait;
 import com.cureforoptimism.mbot.repository.RarityRankRepository;
@@ -11,12 +14,6 @@ import com.inamik.text.tables.grid.Border;
 import com.inamik.text.tables.grid.Util;
 import com.smolbrains.SmolBrainsContract;
 import discord4j.core.spec.EmbedCreateSpec;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.json.JSONObject;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.net.URI;
@@ -25,9 +22,11 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-
-import static com.cureforoptimism.mbot.Constants.SMOL_HIGHEST_ID;
-import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @AllArgsConstructor
@@ -87,13 +86,6 @@ public class Utilities {
     }
 
     try {
-      String baseUri = smolBrainsContract.baseURI().send();
-
-      HttpClient httpClient = HttpClient.newHttpClient();
-      HttpRequest request =
-          HttpRequest.newBuilder().uri(new URI(baseUri + id + "/0")).GET().build();
-      final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-      final var obj = new JSONObject(response.body()).getString("image");
       return Optional.of(
           EmbedCreateSpec.builder()
               .title("SMOL #" + id + "\nRANK: #" + rarityRank.getRank() + " (WIP)")
@@ -101,7 +93,7 @@ public class Utilities {
                   "SmolBot",
                   null,
                   "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
-              .image(obj) // Hardcoded to 0 brain size, for now
+              .image(getSmolImage(id).orElse("")) // Hardcoded to 0 brain size, for now
               .description(output.toString())
               .addField(
                   "Ranking Notes",
@@ -110,6 +102,22 @@ public class Utilities {
               .build());
     } catch (Exception ex) {
       log.error("Error retrieving smol", ex);
+    }
+
+    return Optional.empty();
+  }
+
+  public Optional<String> getSmolImage(String id) {
+    try {
+      String baseUri = smolBrainsContract.baseURI().send();
+
+      HttpClient httpClient = HttpClient.newHttpClient();
+      HttpRequest request =
+          HttpRequest.newBuilder().uri(new URI(baseUri + id + "/0")).GET().build();
+      final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      return Optional.of(new JSONObject(response.body()).getString("image"));
+    } catch (Exception ex) {
+      log.error("Error retrieving smol image", ex);
     }
 
     return Optional.empty();
