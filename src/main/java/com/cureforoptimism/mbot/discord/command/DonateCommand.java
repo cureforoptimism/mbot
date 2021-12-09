@@ -26,7 +26,7 @@ public class DonateCommand implements MbotCommand {
   @Override
   public Mono<Message> handle(MessageCreateEvent event) {
     String description =
-            """
+        """
                     This Discord bot is built and maintained by `Cure For Optimism#5061`, who is not a part of the Smol/Treasure development team (just a fan).
 
                     You can find the source code for this bot at https://github.com/cureforoptimism/mbot; PR's are welcome!

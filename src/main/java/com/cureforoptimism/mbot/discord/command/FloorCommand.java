@@ -137,6 +137,19 @@ public class FloorCommand implements MbotCommand {
         .nextCell(String.format("$%.2f", usdCheapestPair.add(usdLandFloor).add(usdCheapestVroom)))
         .applyToCell(RIGHT_ALIGN.withWidth(12));
 
+    table
+        .nextRow()
+        .nextCell("PAIR+LAND+VROOMx2")
+        .nextCell(
+            String.format(
+                "%.2f", cheapestPair.add(landFloor).add(cheapestVroom).add(cheapestVroom)))
+        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(
+            String.format(
+                "$%.2f",
+                usdCheapestPair.add(usdLandFloor).add(usdCheapestVroom).add(usdCheapestVroom)))
+        .applyToCell(RIGHT_ALIGN.withWidth(12));
+
     final var output =
         String.format(
             "Total SMOL listings: %d (%d LAND, %d VROOM)\nCheapest Male ID: #%d, Cheapest Female ID: #%d\nCheapest Vroom ID: #%d```\n%s```\n",
@@ -161,6 +174,10 @@ public class FloorCommand implements MbotCommand {
                             null,
                             "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
                         .description(output)
+                        .addField(
+                            "Note",
+                            "Choose your own floor; 2x VROOM is default for OG minters, but new Smols don't require 2 VROOMs! Added here by a smol lot of requests",
+                            true)
                         .build()));
   }
 }

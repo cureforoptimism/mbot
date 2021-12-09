@@ -1,5 +1,7 @@
 package com.cureforoptimism.mbot;
 
+import static com.cureforoptimism.mbot.Constants.*;
+
 import com.cureforoptimism.mbot.domain.*;
 import com.cureforoptimism.mbot.repository.RarityRankRepository;
 import com.cureforoptimism.mbot.repository.TraitsRepository;
@@ -13,12 +15,6 @@ import com.inamik.text.tables.grid.Util;
 import com.smolbrains.SmolBrainsContract;
 import com.smolbrains.SmolBrainsVroomContract;
 import discord4j.core.spec.EmbedCreateSpec;
-import lombok.extern.slf4j.Slf4j;
-import org.json.JSONObject;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -33,8 +29,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-
-import static com.cureforoptimism.mbot.Constants.*;
+import javax.imageio.ImageIO;
+import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @Slf4j

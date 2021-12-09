@@ -3,12 +3,11 @@ package com.cureforoptimism.mbot.discord.listener;
 import com.cureforoptimism.mbot.discord.command.MbotCommand;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
+import java.util.Collection;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.Collection;
 
 @Slf4j
 public class MbotCommandListener {

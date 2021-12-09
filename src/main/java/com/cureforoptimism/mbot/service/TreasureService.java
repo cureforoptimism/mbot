@@ -1,5 +1,8 @@
 package com.cureforoptimism.mbot.service;
 
+import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
+import static com.cureforoptimism.mbot.Constants.SMOL_VROOM_TOTAL_SUPPLY;
+
 import com.cureforoptimism.mbot.domain.Smol;
 import com.cureforoptimism.mbot.domain.Trait;
 import com.cureforoptimism.mbot.domain.VroomTrait;
@@ -8,16 +11,6 @@ import com.cureforoptimism.mbot.repository.VroomTraitsRepository;
 import com.madgag.gif.fmsware.AnimatedGifEncoder;
 import com.smolbrains.SmolBrainsContract;
 import com.smolbrains.SmolBrainsVroomContract;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
-
-import javax.imageio.ImageIO;
-import javax.transaction.Transactional;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -33,9 +26,15 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.*;
-
-import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
-import static com.cureforoptimism.mbot.Constants.SMOL_VROOM_TOTAL_SUPPLY;
+import javax.imageio.ImageIO;
+import javax.transaction.Transactional;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
