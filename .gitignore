@@ -38,3 +38,6 @@ out/
 
 ### Secrets/Tokens ###
 src/main/resources/tokens.properties
+
+### Cached assets ###
+img_cache/

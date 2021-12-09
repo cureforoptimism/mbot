@@ -1,6 +1,7 @@
 package com.cureforoptimism.mbot.discord.command;
 
 import com.cureforoptimism.mbot.Utilities;
+import com.cureforoptimism.mbot.domain.SmolType;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.MessageCreateSpec;
@@ -60,7 +61,7 @@ public class SantaCommand implements MbotCommand {
       String tokenId = parts[1];
 
       try {
-        final var smolUri = new URI(utilities.getSmolImage(tokenId).orElse(""));
+        final var smolUri = new URI(utilities.getSmolImage(tokenId, SmolType.SMOL).orElse(""));
         final var imageSmol = ImageIO.read(smolUri.toURL());
 
         BufferedImage output =
