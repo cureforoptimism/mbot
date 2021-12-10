@@ -25,10 +25,14 @@ public class DonateCommand implements MbotCommand {
 
   @Override
   public Mono<Message> handle(MessageCreateEvent event) {
-    String description = "This Discord bot is built and maintained by `Cure For Optimism#5061`, who is not a part of the Smol/Treasure development team (just a fan).\n\n" +
-            "You can find the source code for this bot at https://github.com/cureforoptimism/mbot; PR's are welcome!\n\n" +
-            "I write this for fun and to help keep people interested in the Smoliverse. A few people have asked me about donations, though, so if you'd like to buy me a whiskey feel free to toss something at `cureforoptimism.eth`\n" +
-            "I want to stress that I'm running and hosting this bot for fun, though, so donations aren't necessary! I'll continue to add fun new things to this bot as long as people are finding use in it!";
+    String description =
+            """
+                    This Discord bot is built and maintained by `Cure For Optimism#5061`, who is not a part of the Smol/Treasure development team (just a fan).
+
+                    You can find the source code for this bot at https://github.com/cureforoptimism/mbot; PR's are welcome!
+
+                    I write this for fun and to help keep people interested in the Smoliverse. A few people have asked me about donations, though, so if you'd like to buy me a whiskey feel free to toss something at `cureforoptimism.eth`
+                    I want to stress that I'm running and hosting this bot for fun, though, so donations aren't necessary! I'll continue to add fun new things to this bot as long as people are finding use in it!""";
 
     final var msg =
         EmbedCreateSpec.builder()

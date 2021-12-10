@@ -1,9 +1,6 @@
 package com.cureforoptimism.mbot;
 
-import com.cureforoptimism.mbot.domain.RarityRank;
-import com.cureforoptimism.mbot.domain.Trait;
-import com.cureforoptimism.mbot.domain.VroomRarityRank;
-import com.cureforoptimism.mbot.domain.VroomTrait;
+import com.cureforoptimism.mbot.domain.*;
 import com.cureforoptimism.mbot.repository.RarityRankRepository;
 import com.cureforoptimism.mbot.repository.TraitsRepository;
 import com.cureforoptimism.mbot.repository.VroomRarityRankRepository;
@@ -16,34 +13,64 @@ import com.inamik.text.tables.grid.Util;
 import com.smolbrains.SmolBrainsContract;
 import com.smolbrains.SmolBrainsVroomContract;
 import discord4j.core.spec.EmbedCreateSpec;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static com.cureforoptimism.mbot.Constants.*;
 
 @Component
-@AllArgsConstructor
 @Slf4j
 public class Utilities {
   private final TreasureService treasureService;
   private final RarityRankRepository rarityRankRepository;
   private final TraitsRepository traitsRepository;
   private final VroomTraitsRepository vroomTraitsRepository;
-  private final SmolBrainsContract smolBrainsContract;
   private final SmolBrainsVroomContract smolBrainsVroomContract;
   private final VroomRarityRankRepository vroomRarityRankRepository;
+  private String smolBaseUri;
+  private String vroomBaseUri;
+
+  public Utilities(
+      TreasureService treasureService,
+      RarityRankRepository rarityRankRepository,
+      TraitsRepository traitsRepository,
+      VroomTraitsRepository vroomTraitsRepository,
+      SmolBrainsContract smolBrainsContract,
+      SmolBrainsVroomContract smolBrainsVroomContract,
+      VroomRarityRankRepository vroomRarityRankRepository) {
+    this.treasureService = treasureService;
+    this.rarityRankRepository = rarityRankRepository;
+    this.traitsRepository = traitsRepository;
+    this.vroomTraitsRepository = vroomTraitsRepository;
+    this.smolBrainsVroomContract = smolBrainsVroomContract;
+    this.vroomRarityRankRepository = vroomRarityRankRepository;
+
+    try {
+      this.smolBaseUri = smolBrainsContract.baseURI().send();
+      this.vroomBaseUri = smolBrainsVroomContract.baseURI().send();
+    } catch (Exception ex) {
+      log.error("Unable to retrieve SMOL contract base URI");
+      System.exit(-1);
+    }
+  }
 
   public Optional<EmbedCreateSpec> getSmolEmbed(String id) {
     StringBuilder output = new StringBuilder();
@@ -101,7 +128,8 @@ public class Utilities {
                   "SmolBot",
                   null,
                   "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
-              .image(getSmolImage(id).orElse("")) // Hardcoded to 0 brain size, for now
+              .image(
+                  getSmolImage(id, SmolType.SMOL).orElse("")) // Hardcoded to 0 brain size, for now
               .description(output.toString())
               .addField(
                   "Ranking Notes",
@@ -183,6 +211,55 @@ public class Utilities {
     return Optional.empty();
   }
 
+  public Optional<BufferedImage> getSmolBufferedImage(String id, SmolType smolType) {
+    final var pathPiece =
+        switch (smolType) {
+          case SMOL -> "smols";
+          case VROOM -> "vrooms";
+        };
+
+    final Path path = Paths.get("img_cache", pathPiece, id + ".png");
+    if (path.toFile().exists()) {
+      // Read
+      try {
+        ByteArrayInputStream bytes = new ByteArrayInputStream(Files.readAllBytes(path));
+        BufferedImage img = ImageIO.read(bytes);
+        return Optional.of(img);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    } else {
+      // Fetch and write
+      final var imgOpt = getSmolImage(id, smolType);
+      if (imgOpt.isPresent()) {
+        try {
+          HttpClient httpClient = HttpClient.newHttpClient();
+          HttpRequest request = HttpRequest.newBuilder().uri(new URI(imgOpt.get())).build();
+
+          for (int retry = 0; retry <= 5; retry++) {
+            final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() == 200) {
+              log.info("Writing new cached object: " + path + "; try: " + (retry + 1));
+              Files.write(path, response.body());
+
+              ByteArrayInputStream imgBytes = new ByteArrayInputStream(response.body());
+              BufferedImage img = ImageIO.read(imgBytes);
+
+              return Optional.of(img);
+            } else {
+              Thread.sleep(250);
+              log.error("Unable to retrieve image (will retry): " + response.statusCode());
+            }
+          }
+        } catch (Exception ex) {
+          log.error("Error retrieving SMOL image");
+        }
+      }
+    }
+
+    return Optional.empty();
+  }
+
   public Optional<String> getCarImage(String id) {
     try {
       String baseUri = smolBrainsVroomContract.baseURI().send();
@@ -198,13 +275,21 @@ public class Utilities {
     return Optional.empty();
   }
 
-  public Optional<String> getSmolImage(String id) {
+  public Optional<String> getSmolImage(String id, SmolType smolType) {
     try {
-      String baseUri = smolBrainsContract.baseURI().send();
-
       HttpClient httpClient = HttpClient.newHttpClient();
-      HttpRequest request =
-          HttpRequest.newBuilder().uri(new URI(baseUri + id + "/0")).GET().build();
+      HttpRequest request;
+
+      switch (smolType) {
+        case SMOL -> request =
+            HttpRequest.newBuilder().uri(new URI(this.smolBaseUri + id + "/0")).GET().build();
+        case VROOM -> request =
+            HttpRequest.newBuilder().uri(new URI(this.vroomBaseUri + id)).GET().build();
+        default -> {
+          return Optional.empty();
+        }
+      }
+
       final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
       return Optional.of(new JSONObject(response.body()).getString("image"));
     } catch (Exception ex) {
