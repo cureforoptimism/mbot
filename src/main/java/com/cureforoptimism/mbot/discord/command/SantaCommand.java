@@ -50,12 +50,12 @@ public class SantaCommand implements MbotCommand {
 
   @Override
   public String getDescription() {
-    return "Ho ho ho with a smol smol smol! Hint: add 'old' for old hat, and 'suit' to include suit. Credit to `DomZ#0362` for new hat/suit!";
+    return "Ho ho ho with a smol smol smol! Hint: add 'old' for old hat, and 'suit' to include suit; you can leave the hat off with `nocap`. Credit to `DomZ#0362` for new hat/suit!";
   }
 
   @Override
   public String getUsage() {
-    return "<token_id> [old] [suit]";
+    return "<token_id> [old] [suit] [nocap]";
   }
 
   @Override
@@ -63,6 +63,7 @@ public class SantaCommand implements MbotCommand {
     String msg = event.getMessage().getContent();
     String[] parts = msg.split(" ");
     boolean useOldHat = false;
+    boolean useNewHat = true;
     boolean useSuit = false;
 
     if (parts.length >= 2) {
@@ -73,6 +74,8 @@ public class SantaCommand implements MbotCommand {
           useOldHat = true;
         } else if (part.equalsIgnoreCase("suit")) {
           useSuit = true;
+        } else if (part.equalsIgnoreCase("nocap")) {
+          useNewHat = false;
         }
       }
 
@@ -90,7 +93,7 @@ public class SantaCommand implements MbotCommand {
 
         if (useOldHat) {
           graphics.drawImage(imageHat, 110, 35, null);
-        } else {
+        } else if(useNewHat) {
           graphics.setComposite(AlphaComposite.SrcOver);
           graphics.drawImage(imageNewHat, 0, 0, null);
         }
