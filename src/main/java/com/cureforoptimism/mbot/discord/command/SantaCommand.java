@@ -25,6 +25,7 @@ public class SantaCommand implements MbotCommand {
   private final Utilities utilities;
   private BufferedImage imageHat = null;
   private BufferedImage imageNewHat = null;
+  private BufferedImage imageJohn = null;
   private BufferedImage imageSuit = null;
 
   public SantaCommand(Utilities utilities) {
@@ -33,11 +34,13 @@ public class SantaCommand implements MbotCommand {
     var hatRes = new ClassPathResource("santa-hat.png");
     var newHatRes = new ClassPathResource("santa-hat-new.png");
     var suitRes = new ClassPathResource("santa-suit-new.png");
+    var johnRes = new ClassPathResource("santa-john.png");
 
     try {
       imageHat = ImageIO.read(hatRes.getInputStream());
       imageNewHat = ImageIO.read(newHatRes.getInputStream());
       imageSuit = ImageIO.read(suitRes.getInputStream());
+      imageJohn = ImageIO.read(johnRes.getInputStream());
     } catch (Exception ex) {
       log.error("Unable to process images");
     }
@@ -69,6 +72,29 @@ public class SantaCommand implements MbotCommand {
     if (parts.length >= 2) {
       String tokenId = parts[1];
 
+      if (tokenId.equalsIgnoreCase("john")) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        try {
+          ImageIO.write(imageJohn, "png", outputStream);
+        } catch (IOException e) {
+          log.error("exception fetching john", e);
+          return Mono.empty();
+        }
+
+        return event
+            .getMessage()
+            .getChannel()
+            .flatMap(
+                c ->
+                    c.createMessage(
+                        MessageCreateSpec.builder()
+                            .addFile(
+                                "santa-john.png",
+                                new ByteArrayInputStream(outputStream.toByteArray()))
+                            .build()));
+      }
+
       for (String part : parts) {
         if (part.equalsIgnoreCase("old")) {
           useOldHat = true;
@@ -76,6 +102,7 @@ public class SantaCommand implements MbotCommand {
           useSuit = true;
         } else if (part.equalsIgnoreCase("nocap")) {
           useNewHat = false;
+          useSuit = true;
         }
       }
 
@@ -93,7 +120,7 @@ public class SantaCommand implements MbotCommand {
 
         if (useOldHat) {
           graphics.drawImage(imageHat, 110, 35, null);
-        } else if(useNewHat) {
+        } else if (useNewHat) {
           graphics.setComposite(AlphaComposite.SrcOver);
           graphics.drawImage(imageNewHat, 0, 0, null);
         }
