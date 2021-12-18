@@ -73,7 +73,7 @@ public class SwolSantaCommand implements MbotCommand {
         graphics.drawImage(imageSmol, 0, 0, null);
 
         graphics.setComposite(AlphaComposite.SrcOver);
-        graphics.drawImage(imageHat, 132, 74, null);
+        graphics.drawImage(imageHat, 132, 76, null);
 
         graphics.dispose();
 
