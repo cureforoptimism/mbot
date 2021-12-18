@@ -62,6 +62,8 @@ public class FloorCommand implements MbotCommand {
     final var cheapestVroomId = treasureService.getCheapestVroomId();
     final var usdCheapestVroom = cheapestVroom.multiply(BigDecimal.valueOf(currentPrice));
     final var totalVroomListings = treasureService.getTotalVroomListings();
+    final var bodyFloor = treasureService.getBodyFloor();
+    final var usdBodyFloor = bodyFloor.multiply(BigDecimal.valueOf(currentPrice));
 
     final SimpleTable table =
         new SimpleTable()
@@ -79,6 +81,14 @@ public class FloorCommand implements MbotCommand {
         .nextCell(String.format("%.2f", magicFloor))
         .applyToCell(RIGHT_ALIGN.withWidth(12))
         .nextCell(String.format("$%.2f", usdFloor))
+        .applyToCell(RIGHT_ALIGN.withWidth(12));
+
+    table
+        .nextRow()
+        .nextCell("SMOLBODY")
+        .nextCell(String.format("%.2f", bodyFloor))
+        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("$%.2f", usdBodyFloor))
         .applyToCell(RIGHT_ALIGN.withWidth(12));
 
     table
