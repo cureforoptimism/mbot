@@ -53,6 +53,7 @@ public class TreasureService {
   @Getter private int cheapestMaleId;
   @Getter private int cheapestFemaleId;
   @Getter private int cheapestVroomId;
+  @Getter private BigDecimal bodyFloor;
   final SmolRepository smolRepository;
   final SmolBodyRepository smolBodyRepository;
   final VroomTraitsRepository vroomTraitsRepository;
@@ -476,6 +477,30 @@ public class TreasureService {
         // Whatever; it'll retry
       }
 
+      // Body floor (also, for the love of God cure, just rewrite thegraph query to do this in fewer
+      // calls)
+      jsonBody =
+          "{\"query\":\"query getCollectionStats($id: ID!) {\\n  collection(id: $id) {\\n    floorPrice\\n    totalListings\\n    totalVolume\\n    listings(where: {status: Active}) {\\n      token {\\n        floorPrice\\n        name\\n      }\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0x17dacad7975960833f374622fad08b90ed67d1b5\"},\"operationName\":\"getCollectionStats\"}";
+      request =
+          HttpRequest.newBuilder(
+                  new URI("https://api.thegraph.com/subgraphs/name/wyze/treasure-marketplace"))
+              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+              .header("Content-Type", "application/json")
+              .build();
+
+      try {
+        HttpResponse<String> response =
+            httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        JSONObject obj =
+            new JSONObject(response.body()).getJSONObject("data").getJSONObject("collection");
+
+        final var floorPrice = obj.getBigInteger("floorPrice");
+
+        MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
+        bodyFloor = new BigDecimal(floorPrice, 18, mc);
+      } catch (InterruptedException ex) {
+        // Whatever; it'll retry
+      }
     } catch (IOException | URISyntaxException ex) {
       log.warn("Failed to retrieve treasure: ", ex);
     }
