@@ -2,5 +2,6 @@ package com.cureforoptimism.mbot.domain;
 
 public enum SmolType {
   SMOL,
-  VROOM
+  VROOM,
+  SMOL_BODY,
 }

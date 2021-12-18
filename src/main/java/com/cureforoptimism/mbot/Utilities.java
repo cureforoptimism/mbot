@@ -3,15 +3,13 @@ package com.cureforoptimism.mbot;
 import static com.cureforoptimism.mbot.Constants.*;
 
 import com.cureforoptimism.mbot.domain.*;
-import com.cureforoptimism.mbot.repository.RarityRankRepository;
-import com.cureforoptimism.mbot.repository.TraitsRepository;
-import com.cureforoptimism.mbot.repository.VroomRarityRankRepository;
-import com.cureforoptimism.mbot.repository.VroomTraitsRepository;
+import com.cureforoptimism.mbot.repository.*;
 import com.cureforoptimism.mbot.service.TreasureService;
 import com.inamik.text.tables.GridTable;
 import com.inamik.text.tables.SimpleTable;
 import com.inamik.text.tables.grid.Border;
 import com.inamik.text.tables.grid.Util;
+import com.smolbrains.SmolBodiesContract;
 import com.smolbrains.SmolBrainsContract;
 import com.smolbrains.SmolBrainsVroomContract;
 import discord4j.core.spec.EmbedCreateSpec;
@@ -42,10 +40,14 @@ public class Utilities {
   private final RarityRankRepository rarityRankRepository;
   private final TraitsRepository traitsRepository;
   private final VroomTraitsRepository vroomTraitsRepository;
+  private final SmolBodyTraitsRepository smolBodyTraitsRepository;
   private final SmolBrainsVroomContract smolBrainsVroomContract;
+  private final SmolBodiesContract smolBodiesContract;
   private final VroomRarityRankRepository vroomRarityRankRepository;
+  private final SmolBodyRarityRankRepository smolBodyRarityRankRepository;
   private String smolBaseUri;
   private String vroomBaseUri;
+  private String smolBodyBaseUri;
 
   public Utilities(
       TreasureService treasureService,
@@ -54,17 +56,24 @@ public class Utilities {
       VroomTraitsRepository vroomTraitsRepository,
       SmolBrainsContract smolBrainsContract,
       SmolBrainsVroomContract smolBrainsVroomContract,
-      VroomRarityRankRepository vroomRarityRankRepository) {
+      VroomRarityRankRepository vroomRarityRankRepository,
+      SmolBodyTraitsRepository smolBodyTraitsRepository,
+      SmolBodyRarityRankRepository smolBodyRarityRankRepository,
+      SmolBodiesContract smolBodiesContract) {
     this.treasureService = treasureService;
     this.rarityRankRepository = rarityRankRepository;
     this.traitsRepository = traitsRepository;
     this.vroomTraitsRepository = vroomTraitsRepository;
     this.smolBrainsVroomContract = smolBrainsVroomContract;
     this.vroomRarityRankRepository = vroomRarityRankRepository;
+    this.smolBodyTraitsRepository = smolBodyTraitsRepository;
+    this.smolBodyRarityRankRepository = smolBodyRarityRankRepository;
+    this.smolBodiesContract = smolBodiesContract;
 
     try {
       this.smolBaseUri = smolBrainsContract.baseURI().send();
       this.vroomBaseUri = smolBrainsVroomContract.baseURI().send();
+      this.smolBodyBaseUri = smolBodiesContract.baseURI().send();
     } catch (Exception ex) {
       log.error("Unable to retrieve SMOL contract base URI");
       System.exit(-1);
@@ -133,6 +142,78 @@ public class Utilities {
               .addField(
                   "Ranking Notes",
                   "Ranking is unofficial. Smols with unique traits are weighted the highest. Traits that occur < %0.65 are weighted 2nd highest, %0.80 third highest",
+                  true)
+              .build());
+    } catch (Exception ex) {
+      log.error("Error retrieving smol", ex);
+    }
+
+    return Optional.empty();
+  }
+
+  public Optional<EmbedCreateSpec> getSwolEmbed(String id) {
+    StringBuilder output = new StringBuilder();
+    int smolId;
+    long smolLongId;
+
+    try {
+      smolId = Integer.parseInt(id);
+      smolLongId = Long.parseLong(id);
+    } catch (NumberFormatException ex) {
+      return Optional.empty();
+    }
+
+    output.append("Platez: ").append(treasureService.getPlatez(smolId)).append("\n\n");
+
+    List<SmolBodyTrait> traits = smolBodyTraitsRepository.findBySmolBody_Id(smolLongId);
+    SmolBodyRarityRank rarityRank = smolBodyRarityRankRepository.findBySmolBodyId(smolLongId);
+
+    Map<String, Double> percentages = new TreeMap<>();
+    for (SmolBodyTrait trait : traits) {
+      if (trait.getType().equalsIgnoreCase("swol size")) {
+        continue;
+      }
+
+      percentages.put(
+          trait.getType() + " - " + trait.getValue(),
+          getSmolBodyTraitRarity(trait.getType(), trait.getValue()));
+    }
+
+    final var sorted =
+        percentages.entrySet().stream().sorted(Map.Entry.comparingByValue()).toList();
+    for (Map.Entry<String, Double> entry : sorted) {
+      String marker = "";
+      if (entry.getValue() < 0.016d) {
+        marker = " (Unique)";
+      } else if (entry.getValue() < 0.21d) {
+        marker = " (Ultra rare)";
+      } else if (entry.getValue() < 0.30d) {
+        marker = " (Rare)";
+      }
+
+      output
+          .append(entry.getKey())
+          .append(" ")
+          .append(String.format("(%.3f%%)", entry.getValue()))
+          .append(marker)
+          .append("\n");
+    }
+
+    try {
+      return Optional.of(
+          EmbedCreateSpec.builder()
+              .title("SMOLBODIES #" + id + "\nRANK: #" + rarityRank.getRank() + " (WIP)")
+              .author(
+                  "SmolBot",
+                  null,
+                  "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmolbodies.94d441bb.png&w=1920&q=75")
+              .image(
+                  getSmolImage(id, SmolType.SMOL_BODY)
+                      .orElse("")) // Hardcoded to 0 brain size, for now
+              .description(output.toString())
+              .addField(
+                  "Ranking Notes",
+                  "Ranking is unofficial. SmolBodies with unique traits are weighted the highest. Traits that occur < %2.10 are weighted 2nd highest, %3.00 third highest",
                   true)
               .build());
     } catch (Exception ex) {
@@ -215,6 +296,7 @@ public class Utilities {
         switch (smolType) {
           case SMOL -> "smols";
           case VROOM -> "vrooms";
+          case SMOL_BODY -> "smol_body";
         };
 
     final Path path = Paths.get("img_cache", pathPiece, id + ".png");
@@ -284,6 +366,8 @@ public class Utilities {
             HttpRequest.newBuilder().uri(new URI(this.smolBaseUri + id + "/0")).GET().build();
         case VROOM -> request =
             HttpRequest.newBuilder().uri(new URI(this.vroomBaseUri + id)).GET().build();
+        case SMOL_BODY -> request =
+            HttpRequest.newBuilder().uri(new URI(this.smolBodyBaseUri + id + "/0")).GET().build();
         default -> {
           return Optional.empty();
         }
@@ -298,6 +382,11 @@ public class Utilities {
     return Optional.empty();
   }
 
+  public double getSmolBodyTraitRarity(String type, String value) {
+    long count = smolBodyTraitsRepository.countByTypeIgnoreCaseAndValueIgnoreCase(type, value);
+    return ((double) count / (double) SMOL_BODY_TOTAL_SUPPLY) * 100.0d;
+  }
+
   public double getVroomTraitRarity(String type, String value) {
     long count = vroomTraitsRepository.countByTypeIgnoreCaseAndValueIgnoreCase(type, value);
     return ((double) count / (double) SMOL_VROOM_TOTAL_SUPPLY) * 100.0d;
@@ -306,6 +395,82 @@ public class Utilities {
   public double getTraitRarity(String type, String value) {
     long count = traitsRepository.countByTypeIgnoreCaseAndValueIgnoreCase(type, value);
     return ((double) count / (double) SMOL_TOTAL_SUPPLY) * 100.0d;
+  }
+
+  @Transactional
+  public void generateBodyRanks() {
+    Map<String, Map<String, Double>> rarityCache = new HashMap<>();
+    Map<Long, Double> scores = new HashMap<>();
+
+    Set<Long> knownRares = new HashSet<>();
+    knownRares.add(97L);
+    knownRares.add(888L);
+    knownRares.add(1664L);
+    knownRares.add(2375L);
+    knownRares.add(3113L);
+    knownRares.add(3553L);
+    knownRares.add(4444L);
+    knownRares.add(5126L);
+    knownRares.add(5987L);
+    knownRares.add(6331L);
+
+    for (long x = 0; x <= SMOL_BODY_HIGHEST_ID; x++) {
+      double currentScore = 0.0f;
+      List<SmolBodyTrait> traits = smolBodyTraitsRepository.findBySmolBody_Id(x);
+      for (SmolBodyTrait trait : traits) {
+        Map<String, Double> rarity = rarityCache.get(trait.getType());
+
+        if (rarity == null) {
+          rarity = new HashMap<>();
+        }
+
+        if (!rarity.containsKey(trait.getValue())) {
+          rarity.put(trait.getValue(), getSmolBodyTraitRarity(trait.getType(), trait.getValue()));
+
+          rarityCache.put(trait.getType(), rarity);
+        }
+
+        // Apply weights for rare traits
+        final var percentage = rarityCache.get(trait.getType()).get(trait.getValue());
+        if (knownRares.contains(x)) {
+          // Unique; heavy weight
+          currentScore -= 300.0;
+        } else if (percentage < 0.21d) {
+          currentScore -= 150;
+        } else if (percentage < 0.30d) {
+          currentScore -= 100;
+        }
+
+        currentScore += rarityCache.get(trait.getType()).get(trait.getValue());
+      }
+
+      if (x % 100 == 0) {
+        log.info("Gen #" + x);
+      }
+
+      scores.put(x, currentScore);
+    }
+
+    final var sorted = scores.entrySet().stream().sorted(Map.Entry.comparingByValue()).toList();
+    double lastRankScore = sorted.get(0).getValue();
+    int currentRank = 1;
+    for (Map.Entry<Long, Double> longDoubleEntry : sorted) {
+      double score = longDoubleEntry.getValue();
+      if (lastRankScore != score) {
+        currentRank++;
+      }
+
+      smolBodyRarityRankRepository.save(
+          SmolBodyRarityRank.builder()
+              .smolBodyId(longDoubleEntry.getKey())
+              .rank(currentRank)
+              .score(longDoubleEntry.getValue())
+              .build());
+
+      lastRankScore = longDoubleEntry.getValue();
+    }
+
+    log.info("Finished generating body ranks");
   }
 
   @Transactional

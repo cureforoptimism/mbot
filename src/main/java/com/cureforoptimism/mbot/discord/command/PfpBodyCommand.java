@@ -5,26 +5,27 @@ import com.cureforoptimism.mbot.service.TreasureService;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.MessageCreateSpec;
-import java.io.ByteArrayInputStream;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
+import java.io.ByteArrayInputStream;
+
 @Component
 @AllArgsConstructor
 @Slf4j
-public class PfpCommand implements MbotCommand {
+public class PfpBodyCommand implements MbotCommand {
   private final TreasureService treasureService;
 
   @Override
   public String getName() {
-    return "pfp";
+    return "pfpbody";
   }
 
   @Override
   public String getDescription() {
-    return "Creates an animated gif of a Smol's brain growing (optional: try `!pfp <token_id> reverse`, `!pfp <token_id> faster`, `!pfp <token_id> faster faster faster reverse`)";
+    return "Creates an animated gif of a SmolBodies musclez growing (optional: try `!pfp <token_id> reverse`, `!pfp <token_id> faster`, `!pfp <token_id> faster faster faster reverse`)";
   }
 
   @Override
@@ -34,7 +35,7 @@ public class PfpCommand implements MbotCommand {
 
   @Override
   public Mono<Message> handle(MessageCreateEvent event) {
-    log.info("!pfp command received");
+    log.info("!pfpbody command received");
 
     String msg = event.getMessage().getContent();
     String[] parts = msg.split(" ");
@@ -58,7 +59,8 @@ public class PfpCommand implements MbotCommand {
         }
       }
 
-      final var image = treasureService.getAnimatedGif(tokenId, SmolType.SMOL, reverse, msDelay);
+      final var image =
+          treasureService.getAnimatedGif(tokenId, SmolType.SMOL_BODY, reverse, msDelay);
       if (image == null) {
         return event
             .getMessage()

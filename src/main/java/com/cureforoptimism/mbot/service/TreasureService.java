@@ -1,16 +1,23 @@
 package com.cureforoptimism.mbot.service;
 
-import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
-import static com.cureforoptimism.mbot.Constants.SMOL_VROOM_TOTAL_SUPPLY;
-
-import com.cureforoptimism.mbot.domain.Smol;
-import com.cureforoptimism.mbot.domain.Trait;
-import com.cureforoptimism.mbot.domain.VroomTrait;
+import com.cureforoptimism.mbot.domain.*;
+import com.cureforoptimism.mbot.repository.SmolBodyRepository;
 import com.cureforoptimism.mbot.repository.SmolRepository;
 import com.cureforoptimism.mbot.repository.VroomTraitsRepository;
 import com.madgag.gif.fmsware.AnimatedGifEncoder;
+import com.smolbrains.SmolBodiesContract;
 import com.smolbrains.SmolBrainsContract;
 import com.smolbrains.SmolBrainsVroomContract;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import javax.imageio.ImageIO;
+import javax.transaction.Transactional;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -26,19 +33,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.*;
-import javax.imageio.ImageIO;
-import javax.transaction.Transactional;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
+
+import static com.cureforoptimism.mbot.Constants.*;
 
 @Component
 @Slf4j
 public class TreasureService {
+  private final SmolBodiesContract smolBodiesContract;
   private final SmolBrainsContract smolBrainsContract;
   private final SmolBrainsVroomContract smolBrainsVroomContract;
   @Getter private BigDecimal floor;
@@ -52,20 +53,23 @@ public class TreasureService {
   @Getter private int cheapestMaleId;
   @Getter private int cheapestFemaleId;
   @Getter private int cheapestVroomId;
-  private final Map<String, Map<String, Integer>> rarityMap;
   final SmolRepository smolRepository;
+  final SmolBodyRepository smolBodyRepository;
   final VroomTraitsRepository vroomTraitsRepository;
 
   public TreasureService(
       SmolBrainsContract smolBrainsContract,
       SmolRepository smolRepository,
       SmolBrainsVroomContract smolBrainsVroomContract,
-      VroomTraitsRepository vroomTraitsRepository) {
+      VroomTraitsRepository vroomTraitsRepository,
+      SmolBodiesContract smolBodiesContract,
+      SmolBodyRepository smolBodyRepository) {
     this.smolBrainsContract = smolBrainsContract;
     this.smolBrainsVroomContract = smolBrainsVroomContract;
     this.vroomTraitsRepository = vroomTraitsRepository;
     this.smolRepository = smolRepository;
-    this.rarityMap = new HashMap<>();
+    this.smolBodiesContract = smolBodiesContract;
+    this.smolBodyRepository = smolBodyRepository;
   }
 
   public BigDecimal getIq(int tokenId) {
@@ -87,11 +91,31 @@ public class TreasureService {
     return BigDecimal.ZERO;
   }
 
+  public BigDecimal getPlatez(int tokenId) {
+    try {
+      final var iqBig =
+          smolBodiesContract.scanPlates(new BigInteger(String.valueOf(tokenId))).send();
+
+      BigDecimal iq = BigDecimal.ZERO;
+      if (!iqBig.equals(BigInteger.ZERO)) {
+        MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
+        iq = new BigDecimal(iqBig, 18, mc);
+      }
+
+      return iq;
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    return BigDecimal.ZERO;
+  }
+
   @Transactional
   public void getAllRarities() {
     try {
       String baseUri = smolBrainsContract.baseURI().send();
       HttpClient httpClient = HttpClient.newHttpClient();
+      final Map<String, Map<String, Integer>> rarityMap = new HashMap<>();
 
       for (int x = 0; x <= SMOL_TOTAL_SUPPLY; x++) {
         Set<Trait> traits = new HashSet<>();
@@ -131,6 +155,7 @@ public class TreasureService {
     try {
       String baseUri = smolBrainsVroomContract.baseURI().send();
       HttpClient httpClient = HttpClient.newHttpClient();
+      final Map<String, Map<String, Integer>> rarityMap = new HashMap<>();
 
       for (int x = 1; x <= SMOL_VROOM_TOTAL_SUPPLY; x++) {
         Set<VroomTrait> traits = new HashSet<>();
@@ -164,9 +189,64 @@ public class TreasureService {
     }
   }
 
-  public byte[] getAnimatedGif(String tokenId, boolean reverse, int msDelay) {
+  @Transactional
+  public void getAllSmallBodyRarities() {
     try {
-      String baseUri = smolBrainsContract.baseURI().send();
+      String baseUri = smolBodiesContract.baseURI().send();
+      HttpClient httpClient = HttpClient.newHttpClient();
+      final Map<String, Map<String, Integer>> rarityMap = new HashMap<>();
+
+      for (int x = 0; x <= 1; x++) {
+        Set<SmolBodyTrait> traits = new HashSet<>();
+
+        HttpRequest request =
+            HttpRequest.newBuilder().uri(new URI(baseUri + x + "/0")).GET().build();
+
+        final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        JSONArray attributes = new JSONObject(response.body()).getJSONArray("attributes");
+        for (int y = 0; y < attributes.length(); y++) {
+          JSONObject obj = attributes.getJSONObject(y);
+          String trait = obj.getString("trait_type");
+          String value = obj.get("value").toString();
+
+          traits.add(
+              SmolBodyTrait.builder()
+                  .type(trait)
+                  .value(value)
+                  .smolBody(SmolBody.builder().id((long) x).build())
+                  .build());
+
+          if (!rarityMap.containsKey(trait)) {
+            rarityMap.put(trait, new HashMap<>());
+          }
+
+          rarityMap.get(trait).merge(value, 1, Integer::sum);
+        }
+
+        if (x % 100 == 0) {
+          log.info("Rarities: " + x + " (" + SMOL_BODY_HIGHEST_ID + ")");
+        }
+
+        smolBodyRepository.save(SmolBody.builder().id((long) x).traits(traits).build());
+      }
+    } catch (Exception e) {
+      log.error("Error retrieving vroom rarity stats");
+    }
+  }
+
+  public byte[] getAnimatedGif(String tokenId, SmolType smolType, boolean reverse, int msDelay) {
+    try {
+      String baseUri =
+          switch (smolType) {
+            case SMOL -> smolBrainsContract.baseURI().send();
+            case SMOL_BODY -> smolBodiesContract.baseURI().send();
+            default -> "";
+          };
+
+      if (baseUri.isEmpty()) {
+        return null;
+      }
+
       HttpClient httpClient = HttpClient.newHttpClient();
 
       ByteArrayOutputStream finishedImage = new ByteArrayOutputStream();
