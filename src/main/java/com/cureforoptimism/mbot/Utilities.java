@@ -1,7 +1,5 @@
 package com.cureforoptimism.mbot;
 
-import static com.cureforoptimism.mbot.Constants.*;
-
 import com.cureforoptimism.mbot.domain.*;
 import com.cureforoptimism.mbot.repository.*;
 import com.cureforoptimism.mbot.service.TreasureService;
@@ -13,11 +11,18 @@ import com.smolbrains.SmolBodiesContract;
 import com.smolbrains.SmolBrainsContract;
 import com.smolbrains.SmolBrainsVroomContract;
 import discord4j.core.spec.EmbedCreateSpec;
+import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.math.BigInteger;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -27,11 +32,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import javax.imageio.ImageIO;
-import lombok.extern.slf4j.Slf4j;
-import org.json.JSONObject;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+
+import static com.cureforoptimism.mbot.Constants.*;
 
 @Component
 @Slf4j
@@ -43,6 +45,7 @@ public class Utilities {
   private final SmolBodyTraitsRepository smolBodyTraitsRepository;
   private final SmolBrainsVroomContract smolBrainsVroomContract;
   private final SmolBodiesContract smolBodiesContract;
+  private final SmolBrainsContract smolBrainsContract;
   private final VroomRarityRankRepository vroomRarityRankRepository;
   private final SmolBodyRarityRankRepository smolBodyRarityRankRepository;
   private String smolBaseUri;
@@ -69,6 +72,7 @@ public class Utilities {
     this.smolBodyTraitsRepository = smolBodyTraitsRepository;
     this.smolBodyRarityRankRepository = smolBodyRarityRankRepository;
     this.smolBodiesContract = smolBodiesContract;
+    this.smolBrainsContract = smolBrainsContract;
 
     try {
       this.smolBaseUri = smolBrainsContract.baseURI().send();
@@ -363,7 +367,10 @@ public class Utilities {
 
       switch (smolType) {
         case SMOL -> request =
-            HttpRequest.newBuilder().uri(new URI(this.smolBaseUri + id + "/0")).GET().build();
+            HttpRequest.newBuilder()
+                .uri(new URI(this.smolBrainsContract.tokenURI(new BigInteger(id)).send()))
+                .GET()
+                .build();
         case VROOM -> request =
             HttpRequest.newBuilder().uri(new URI(this.vroomBaseUri + id)).GET().build();
         case SMOL_BODY -> request =
