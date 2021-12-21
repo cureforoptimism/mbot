@@ -141,7 +141,8 @@ public class Utilities {
                   null,
                   "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
               .image(
-                  getSmolImage(id, SmolType.SMOL).orElse("")) // Hardcoded to 0 brain size, for now
+                  getSmolImage(id, SmolType.SMOL, false)
+                      .orElse("")) // Hardcoded to 0 brain size, for now
               .description(output.toString())
               .addField(
                   "Ranking Notes",
@@ -212,7 +213,7 @@ public class Utilities {
                   null,
                   "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmolbodies.94d441bb.png&w=1920&q=75")
               .image(
-                  getSmolImage(id, SmolType.SMOL_BODY)
+                  getSmolImage(id, SmolType.SMOL_BODY, true)
                       .orElse("")) // Hardcoded to 0 brain size, for now
               .description(output.toString())
               .addField(
@@ -315,7 +316,7 @@ public class Utilities {
       }
     } else {
       // Fetch and write
-      final var imgOpt = getSmolImage(id, smolType);
+      final var imgOpt = getSmolImage(id, smolType, false);
       if (imgOpt.isPresent()) {
         try {
           HttpClient httpClient = HttpClient.newHttpClient();
@@ -360,24 +361,30 @@ public class Utilities {
     return Optional.empty();
   }
 
-  public Optional<String> getSmolImage(String id, SmolType smolType) {
+  // TODO: Get rid of this forceSmolBrains arg ASAP (adjust santa command)
+  public Optional<String> getSmolImage(String id, SmolType smolType, boolean forceSmolBrain) {
     try {
       HttpClient httpClient = HttpClient.newHttpClient();
-      HttpRequest request;
-
-      switch (smolType) {
-        case SMOL -> request =
-            HttpRequest.newBuilder()
-                .uri(new URI(this.smolBrainsContract.tokenURI(new BigInteger(id)).send()))
+      HttpRequest request =
+          switch (smolType) {
+            case SMOL -> forceSmolBrain
+                ? HttpRequest.newBuilder().uri(new URI(this.smolBaseUri + id + "/0")).GET().build()
+                : HttpRequest.newBuilder()
+                    .uri(new URI(this.smolBrainsContract.tokenURI(new BigInteger(id)).send()))
+                    .GET()
+                    .build();
+            case VROOM -> HttpRequest.newBuilder()
+                .uri(new URI(this.vroomBaseUri + id))
                 .GET()
                 .build();
-        case VROOM -> request =
-            HttpRequest.newBuilder().uri(new URI(this.vroomBaseUri + id)).GET().build();
-        case SMOL_BODY -> request =
-            HttpRequest.newBuilder().uri(new URI(this.smolBodyBaseUri + id + "/0")).GET().build();
-        default -> {
-          return Optional.empty();
-        }
+            case SMOL_BODY -> HttpRequest.newBuilder()
+                .uri(new URI(this.smolBodyBaseUri + id + "/0"))
+                .GET()
+                .build();
+          };
+
+      if (request == null) {
+        return Optional.empty();
       }
 
       final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());

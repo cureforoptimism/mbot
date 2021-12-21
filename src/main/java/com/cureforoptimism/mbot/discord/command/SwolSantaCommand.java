@@ -61,7 +61,8 @@ public class SwolSantaCommand implements MbotCommand {
       String tokenId = parts[1];
 
       try {
-        final var smolUri = new URI(utilities.getSmolImage(tokenId, SmolType.SMOL_BODY).orElse(""));
+        final var smolUri =
+            new URI(utilities.getSmolImage(tokenId, SmolType.SMOL_BODY, true).orElse(""));
         final var imageSmol = ImageIO.read(smolUri.toURL());
 
         BufferedImage output =
