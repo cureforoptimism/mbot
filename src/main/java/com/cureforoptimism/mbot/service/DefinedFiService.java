@@ -50,10 +50,27 @@ public class DefinedFiService implements MagicValueService {
           new JSONObject(response.body()).getJSONObject("data").getJSONObject("pairMetadata");
       BigDecimal price = obj.getBigDecimal("price");
       Double change = obj.getDouble("priceChange24") * 100.0d;
+      Double change12h = obj.getDouble("priceChange12") * 100.0d;
+      Double change4h = obj.getDouble("priceChange4") * 100.0d;
+      Double change1h = obj.getDouble("priceChange1") * 100.0d;
+
+      Double volume24h = obj.getDouble("volume24");
+      Double volume12h = obj.getDouble("volume12");
+      Double volume4h = obj.getDouble("volume4");
+      Double volume1h = obj.getDouble("volume1");
 
       price = price.setScale(4, RoundingMode.HALF_UP);
 
-      discordClient.refreshMagicPrice(price.doubleValue(), change);
+      discordClient.refreshMagicPrice(
+          price.doubleValue(),
+          change,
+          change12h,
+          change4h,
+          change1h,
+          volume24h,
+          volume12h,
+          volume4h,
+          volume1h);
     } catch (URISyntaxException | InterruptedException | IOException e) {
       e.printStackTrace();
     }

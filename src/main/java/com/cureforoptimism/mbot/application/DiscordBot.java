@@ -25,15 +25,39 @@ public class DiscordBot implements ApplicationRunner {
   // TODO: This sucks. Makes this suck less with a rational pattern.
   @Getter Double currentPrice;
   @Getter Double currentChange;
+  @Getter Double currentChange12h;
+  @Getter Double currentChange4h;
+  @Getter Double currentChange1h;
+  @Getter Double currentVolume24h;
+  @Getter Double currentVolume12h;
+  @Getter Double currentVolume4h;
+  @Getter Double currentVolume1h;
 
   public DiscordBot(ApplicationContext context, TokenService tokenService) {
     this.context = context;
     this.tokenService = tokenService;
   }
 
-  public void refreshMagicPrice(Double price, Double usd24HChange) {
+  public void refreshMagicPrice(
+      Double price,
+      Double usd24HChange,
+      Double change12h,
+      Double change4h,
+      Double change1h,
+      Double volume24h,
+      Double volume12h,
+      Double volume4h,
+      Double volume1h) {
     currentPrice = price;
     currentChange = usd24HChange;
+    currentChange12h = change12h;
+    currentChange4h = change4h;
+    currentChange1h = change1h;
+    currentVolume24h = volume24h;
+    currentVolume12h = volume12h;
+    currentVolume4h = volume4h;
+    currentVolume1h = volume1h;
+
     client.getEventDispatcher().publish(new RefreshEvent(null, null));
   }
 

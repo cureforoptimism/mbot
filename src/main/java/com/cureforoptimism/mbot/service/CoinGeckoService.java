@@ -28,7 +28,15 @@ public class CoinGeckoService implements MagicValueService {
           && priceMap.get("magic").containsKey("usd")
           && priceMap.get("magic").containsKey("usd_24h_change")) {
         discordClient.refreshMagicPrice(
-            priceMap.get("magic").get("usd"), priceMap.get("magic").get("usd_24h_change"));
+            priceMap.get("magic").get("usd"),
+            priceMap.get("magic").get("usd_24h_change"),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
       }
     } catch (Exception ex) {
       // Ignore, it'll retry
