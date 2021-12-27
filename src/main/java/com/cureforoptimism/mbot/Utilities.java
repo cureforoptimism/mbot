@@ -361,6 +361,18 @@ public class Utilities {
     return Optional.empty();
   }
 
+  public Integer getSmolBrainSize(String id) {
+    try {
+      final var tokenUri = this.smolBrainsContract.tokenURI(new BigInteger(id)).send();
+      final var parts = tokenUri.split("/");
+      return Integer.parseInt(parts[parts.length - 1]);
+    } catch (Exception ex) {
+      log.warn("Unable to retrieve head size", ex);
+    }
+
+    return 0;
+  }
+
   // TODO: Get rid of this forceSmolBrains arg ASAP (adjust santa command)
   public Optional<String> getSmolImage(String id, SmolType smolType, boolean forceSmolBrain) {
     try {
@@ -370,7 +382,7 @@ public class Utilities {
             case SMOL -> forceSmolBrain
                 ? HttpRequest.newBuilder().uri(new URI(this.smolBaseUri + id + "/0")).GET().build()
                 : HttpRequest.newBuilder()
-                    .uri(new URI(this.smolBrainsContract.tokenURI(new BigInteger(id)).send()))
+                    .uri(new URI(this.smolBaseUri + id + "/" + getSmolBrainSize(id)))
                     .GET()
                     .build();
             case VROOM -> HttpRequest.newBuilder()

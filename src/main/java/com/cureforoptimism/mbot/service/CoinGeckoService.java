@@ -6,9 +6,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
-public class CoinGeckoService {
+public class CoinGeckoService implements MagicValueService {
   private final CoinGeckoApiClient client;
   private final DiscordBot discordClient;
+  private final boolean enabled = false;
 
   public CoinGeckoService(CoinGeckoApiClient client, DiscordBot discordClient) {
     this.client = client;
@@ -17,6 +18,10 @@ public class CoinGeckoService {
 
   @Scheduled(fixedDelay = 30000)
   public void refreshMagicPrice() {
+    if (!enabled) {
+      return;
+    }
+
     try {
       final var priceMap = client.getPrice("magic", "usd", false, false, true, false);
       if (priceMap.containsKey("magic")
