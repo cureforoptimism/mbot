@@ -57,6 +57,7 @@ public class TreasureService {
   final SmolRepository smolRepository;
   final SmolBodyRepository smolBodyRepository;
   final VroomTraitsRepository vroomTraitsRepository;
+  final FloorService floorService;
 
   public TreasureService(
       SmolBrainsContract smolBrainsContract,
@@ -64,13 +65,15 @@ public class TreasureService {
       SmolBrainsVroomContract smolBrainsVroomContract,
       VroomTraitsRepository vroomTraitsRepository,
       SmolBodiesContract smolBodiesContract,
-      SmolBodyRepository smolBodyRepository) {
+      SmolBodyRepository smolBodyRepository,
+      FloorService floorService) {
     this.smolBrainsContract = smolBrainsContract;
     this.smolBrainsVroomContract = smolBrainsVroomContract;
     this.vroomTraitsRepository = vroomTraitsRepository;
     this.smolRepository = smolRepository;
     this.smolBodiesContract = smolBodiesContract;
     this.smolBodyRepository = smolBodyRepository;
+    this.floorService = floorService;
   }
 
   public BigDecimal getIq(int tokenId) {
@@ -501,6 +504,9 @@ public class TreasureService {
       } catch (InterruptedException ex) {
         // Whatever; it'll retry
       }
+
+      // Record data in floor table
+      floorService.addFloorPrice(cheapestMale, cheapestFemale, landFloor, cheapestVroom, bodyFloor);
     } catch (IOException | URISyntaxException ex) {
       log.warn("Failed to retrieve treasure: ", ex);
     }
