@@ -1,14 +1,13 @@
 package com.cureforoptimism.mbot.domain;
 
+import java.math.BigDecimal;
+import java.util.Date;
+import javax.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-
-import javax.persistence.*;
-import java.math.BigDecimal;
-import java.util.Date;
 
 @Entity
 @NoArgsConstructor

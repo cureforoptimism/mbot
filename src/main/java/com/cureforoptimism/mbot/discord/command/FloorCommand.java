@@ -1,5 +1,8 @@
 package com.cureforoptimism.mbot.discord.command;
 
+import static com.inamik.text.tables.Cell.Functions.HORIZONTAL_CENTER;
+import static com.inamik.text.tables.Cell.Functions.RIGHT_ALIGN;
+
 import com.cureforoptimism.mbot.Utilities;
 import com.cureforoptimism.mbot.application.DiscordBot;
 import com.cureforoptimism.mbot.service.FloorService;
@@ -9,16 +12,12 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
+import java.io.ByteArrayInputStream;
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-
-import java.io.ByteArrayInputStream;
-import java.math.BigDecimal;
-
-import static com.inamik.text.tables.Cell.Functions.HORIZONTAL_CENTER;
-import static com.inamik.text.tables.Cell.Functions.RIGHT_ALIGN;
 
 @Component
 @AllArgsConstructor
