@@ -1,5 +1,6 @@
 FROM amazoncorretto:17
 
+ENV TZ="America/Denver"
 ADD . /mbot
 WORKDIR mbot
 RUN ./gradlew bootJar

@@ -2,16 +2,19 @@ package com.cureforoptimism.mbot.discord.command;
 
 import com.cureforoptimism.mbot.Utilities;
 import com.cureforoptimism.mbot.application.DiscordBot;
+import com.cureforoptimism.mbot.service.FloorService;
 import com.cureforoptimism.mbot.service.TreasureService;
 import com.inamik.text.tables.SimpleTable;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.core.spec.MessageCreateSpec;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 
 import static com.inamik.text.tables.Cell.Functions.HORIZONTAL_CENTER;
@@ -23,6 +26,7 @@ import static com.inamik.text.tables.Cell.Functions.RIGHT_ALIGN;
 public class FloorCommand implements MbotCommand {
   final TreasureService treasureService;
   final DiscordBot discordBot;
+  final FloorService floorService;
 
   @Override
   public String getName() {
@@ -175,19 +179,28 @@ public class FloorCommand implements MbotCommand {
         .getMessage()
         .getChannel()
         .flatMap(
-            c ->
-                c.createMessage(
-                    EmbedCreateSpec.builder()
-                        .title("Smol Floor - Treasure Marketplace\nMAGIC: $" + currentPrice)
-                        .author(
-                            "SmolBot",
-                            null,
-                            "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
-                        .description(output)
-                        .addField(
-                            "Note",
-                            "Choose your own floor; 2x VROOM is default for OG minters, but new Smols don't require 2 VROOMs! Added here by a smol lot of requests",
-                            true)
-                        .build()));
+            c -> {
+              EmbedCreateSpec floorEmbed =
+                  EmbedCreateSpec.builder()
+                      .title("Smol Floor - Treasure Marketplace\nMAGIC: $" + currentPrice)
+                      .author(
+                          "SmolBot",
+                          null,
+                          "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
+                      .description(output)
+                      .image("attachment://floor.png")
+                      .addField(
+                          "Note",
+                          "Choose your own floor; 2x VROOM is default for OG minters, but new Smols don't require 2 VROOMs! Added here by a smol lot of requests",
+                          true)
+                      .build();
+              return c.createMessage(
+                  MessageCreateSpec.builder()
+                      .addFile(
+                          "floor.png",
+                          new ByteArrayInputStream(floorService.getCurrentFloorImageBytes()))
+                      .addEmbed(floorEmbed)
+                      .build());
+            });
   }
 }
