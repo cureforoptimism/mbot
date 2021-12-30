@@ -43,6 +43,7 @@ public class FloorService {
   static final Color bgColor = new Color(11, 10, 36);
   private BufferedImage imageSmol = null;
   @Getter private byte[] currentFloorImageBytes = null;
+  @Getter private byte[] currentFloorUsdImageBytes = null;
 
   public FloorService(FloorRepository floorRepository, DiscordBot discordBot) {
     this.floorRepository = floorRepository;
@@ -102,6 +103,12 @@ public class FloorService {
     Map<Date, BigDecimal> bodyFloors = new HashMap<>();
     Map<Date, BigDecimal> landFloors = new HashMap<>();
 
+    Map<Date, BigDecimal> maleFloorsUsd = new HashMap<>();
+    Map<Date, BigDecimal> femaleFloorsUsd = new HashMap<>();
+    Map<Date, BigDecimal> vroomFloorsUsd = new HashMap<>();
+    Map<Date, BigDecimal> bodyFloorsUsd = new HashMap<>();
+    Map<Date, BigDecimal> landFloorsUsd = new HashMap<>();
+
     int hourlyFloors = 0;
     int lastHour = -1;
     BigDecimal avgMaleFloor = BigDecimal.ZERO;
@@ -109,6 +116,13 @@ public class FloorService {
     BigDecimal avgVroomFloor = BigDecimal.ZERO;
     BigDecimal avgBodyFloor = BigDecimal.ZERO;
     BigDecimal avgLandFloor = BigDecimal.ZERO;
+
+    BigDecimal avgMaleFloorUsd = BigDecimal.ZERO;
+    BigDecimal avgFemaleFloorUsd = BigDecimal.ZERO;
+    BigDecimal avgVroomFloorUsd = BigDecimal.ZERO;
+    BigDecimal avgBodyFloorUsd = BigDecimal.ZERO;
+    BigDecimal avgLandFloorUsd = BigDecimal.ZERO;
+
     for (Floor floor : floorValuesLastDay) {
       final var localDateTime =
           Instant.ofEpochMilli(floor.getCreated().getTime())
@@ -128,6 +142,14 @@ public class FloorService {
         avgVroomFloor = avgVroomFloor.add(floor.getVroomFloor());
         avgBodyFloor = avgBodyFloor.add(floor.getBodyFloor());
         avgLandFloor = avgLandFloor.add(floor.getLandFloor());
+
+        avgMaleFloorUsd = avgMaleFloorUsd.add(floor.getMaleFloor().multiply(floor.getMagicPrice()));
+        avgFemaleFloorUsd =
+            avgFemaleFloorUsd.add(floor.getFemaleFloor().multiply(floor.getMagicPrice()));
+        avgVroomFloorUsd =
+            avgVroomFloorUsd.add(floor.getVroomFloor().multiply(floor.getMagicPrice()));
+        avgBodyFloorUsd = avgBodyFloorUsd.add(floor.getBodyFloor().multiply(floor.getMagicPrice()));
+        avgLandFloorUsd = avgLandFloorUsd.add(floor.getLandFloor().multiply(floor.getMagicPrice()));
       } else {
         // commit average to map
         maleFloors.put(
@@ -145,6 +167,36 @@ public class FloorService {
         landFloors.put(
             floor.getCreated(),
             avgLandFloor.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+
+        maleFloorsUsd.put(
+            floor.getCreated(),
+            avgMaleFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+        femaleFloorsUsd.put(
+            floor.getCreated(),
+            avgFemaleFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+        vroomFloorsUsd.put(
+            floor.getCreated(),
+            avgVroomFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+        bodyFloorsUsd.put(
+            floor.getCreated(),
+            avgBodyFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+        landFloorsUsd.put(
+            floor.getCreated(),
+            avgLandFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+
+        avgMaleFloor = BigDecimal.ZERO;
+        avgFemaleFloor = BigDecimal.ZERO;
+        avgVroomFloor = BigDecimal.ZERO;
+        avgBodyFloor = BigDecimal.ZERO;
+        avgLandFloor = BigDecimal.ZERO;
+
+        avgMaleFloorUsd = BigDecimal.ZERO;
+        avgFemaleFloorUsd = BigDecimal.ZERO;
+        avgVroomFloorUsd = BigDecimal.ZERO;
+        avgBodyFloorUsd = BigDecimal.ZERO;
+        avgLandFloorUsd = BigDecimal.ZERO;
+
+        hourlyFloors = 0;
 
         lastHour = hour;
       }
@@ -221,6 +273,79 @@ public class FloorService {
       ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
       ImageIO.write(output, "png", outputStream);
       currentFloorImageBytes = outputStream.toByteArray();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    TimeSeriesCollection datasetUsd = new TimeSeriesCollection();
+    TimeSeries maleSeriesUsd = new TimeSeries("MALE");
+    TimeSeries femaleSeriesUsd = new TimeSeries("LADY");
+    TimeSeries vroomSeriesUsd = new TimeSeries("VROOM");
+    TimeSeries bodySeriesUsd = new TimeSeries("SWOL");
+    TimeSeries landSeriesUsd = new TimeSeries("LAND");
+
+    for (Map.Entry<Date, BigDecimal> entry : maleFloorsUsd.entrySet()) {
+      maleSeriesUsd.add(new Hour(entry.getKey()), entry.getValue());
+    }
+
+    for (Map.Entry<Date, BigDecimal> entry : femaleFloorsUsd.entrySet()) {
+      femaleSeriesUsd.add(new Hour(entry.getKey()), entry.getValue());
+    }
+
+    for (Map.Entry<Date, BigDecimal> entry : vroomFloorsUsd.entrySet()) {
+      vroomSeriesUsd.add(new Hour(entry.getKey()), entry.getValue());
+    }
+
+    for (Map.Entry<Date, BigDecimal> entry : bodyFloorsUsd.entrySet()) {
+      bodySeriesUsd.add(new Hour(entry.getKey()), entry.getValue());
+    }
+
+    for (Map.Entry<Date, BigDecimal> entry : landFloorsUsd.entrySet()) {
+      landSeriesUsd.add(new Hour(entry.getKey()), entry.getValue());
+    }
+
+    datasetUsd.addSeries(maleSeriesUsd);
+    datasetUsd.addSeries(femaleSeriesUsd);
+    datasetUsd.addSeries(vroomSeriesUsd);
+    datasetUsd.addSeries(bodySeriesUsd);
+    datasetUsd.addSeries(landSeriesUsd);
+
+    JFreeChart chartUsd =
+        ChartFactory.createTimeSeriesChart("Smoliverse Floor", "wen", "USD $", datasetUsd);
+
+    theme.apply(chartUsd);
+
+    chartUsd.getTitle().setPaint(new Color(107, 33, 168));
+
+    plot = (XYPlot) chartUsd.getPlot();
+    plot.setBackgroundPaint(new Color(11, 10, 36));
+    plot.setAxisOffset(new RectangleInsets(5.0, 5.0, 5.0, 5.0));
+    plot.setDomainCrosshairVisible(true);
+    plot.setRangeCrosshairVisible(true);
+
+    r = plot.getRenderer();
+    if (r instanceof XYLineAndShapeRenderer renderer) {
+      renderer.setDefaultShapesVisible(true);
+      renderer.setDefaultShapesFilled(true);
+      renderer.setDrawSeriesLineAsPath(true);
+    }
+
+    axis = (DateAxis) plot.getDomainAxis();
+    axis.setDateFormatOverride(new SimpleDateFormat("HH:00"));
+
+    final var imgUsd = chartUsd.createBufferedImage(800, 300);
+
+    output = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_ARGB);
+    graphics = output.createGraphics();
+    graphics.setComposite(AlphaComposite.SrcOver);
+    graphics.drawImage(imgUsd, 0, 0, null);
+    graphics.drawImage(imageSmol, 490, 2, null);
+    graphics.dispose();
+
+    try {
+      ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+      ImageIO.write(output, "png", outputStream);
+      currentFloorUsdImageBytes = outputStream.toByteArray();
     } catch (IOException e) {
       e.printStackTrace();
     }

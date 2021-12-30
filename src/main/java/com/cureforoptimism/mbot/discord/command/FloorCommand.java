@@ -187,17 +187,28 @@ public class FloorCommand implements MbotCommand {
                           null,
                           "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
                       .description(output)
-                      .image("attachment://floor.png")
                       .addField(
                           "Note",
                           "Choose your own floor; 2x VROOM is default for OG minters, but new Smols don't require 2 VROOMs! Added here by a smol lot of requests",
                           true)
                       .build();
+
+              final var floorMagicEmbed =
+                  EmbedCreateSpec.builder().image("attachment://floor.png").build();
+
+              final var floorUsdEmbed =
+                  EmbedCreateSpec.builder().image("attachment://floor_usd.png").build();
+
               return c.createMessage(
                   MessageCreateSpec.builder()
                       .addFile(
                           "floor.png",
                           new ByteArrayInputStream(floorService.getCurrentFloorImageBytes()))
+                      .addFile(
+                          "floor_usd.png",
+                          new ByteArrayInputStream(floorService.getCurrentFloorUsdImageBytes()))
+                      .addEmbed(floorMagicEmbed)
+                      .addEmbed(floorUsdEmbed)
                       .addEmbed(floorEmbed)
                       .build());
             });
