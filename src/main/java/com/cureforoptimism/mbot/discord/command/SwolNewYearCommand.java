@@ -15,6 +15,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import javax.imageio.ImageIO;
@@ -23,18 +25,18 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 @Component
-public class NewYearCommand implements MbotCommand {
+public class SwolNewYearCommand implements MbotCommand {
   private final List<BufferedImage> hatFrames = new ArrayList<>();
   private final Utilities utilities;
 
-  public NewYearCommand(Utilities utilities) {
+  public SwolNewYearCommand(Utilities utilities) {
     this.utilities = utilities;
 
     for (int x = 1; x <= 27; x++) {
       try {
         hatFrames.add(
             ImageIO.read(
-                new ClassPathResource("new_years_layers/hat_" + x + ".png").getInputStream()));
+                new ClassPathResource("new_years_layers/swol_hat_" + x + ".png").getInputStream()));
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -43,12 +45,12 @@ public class NewYearCommand implements MbotCommand {
 
   @Override
   public String getName() {
-    return "newyear";
+    return "swolnewyear";
   }
 
   @Override
   public String getDescription() {
-    return "2021 is so yesterday. Get your smol ass into 2022. Art courtesy of commonopoly#2944.";
+    return "2021 is so yesterday. Get your swol ass into 2022. Art courtesy of `commonopoly#2944`.";
   }
 
   @Override
@@ -67,7 +69,7 @@ public class NewYearCommand implements MbotCommand {
 
       try {
         final var smolUri =
-            new URI(utilities.getSmolImage(tokenId, SmolType.SMOL, true).orElse(""));
+            new URI(utilities.getSmolImage(tokenId, SmolType.SMOL_BODY, true).orElse(""));
         final var imageSmol = ImageIO.read(smolUri.toURL());
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -89,7 +91,7 @@ public class NewYearCommand implements MbotCommand {
             graphics.setComposite(AlphaComposite.SrcOver);
 
             graphics.drawImage(imageSmol, 0, 0, null);
-            graphics.drawImage(hatFrame, 0, 0, null);
+            graphics.drawImage(hatFrame, 105, 29, null);
 
             ByteArrayOutputStream frameStream = new ByteArrayOutputStream();
             ImageIO.write(output, "png", frameStream);
@@ -109,7 +111,7 @@ public class NewYearCommand implements MbotCommand {
           graphics.setComposite(AlphaComposite.SrcOver);
 
           graphics.drawImage(imageSmol, 0, 0, null);
-          graphics.drawImage(hatFrames.get(18), 0, 0, null);
+          graphics.drawImage(hatFrames.get(18), 105, 29, null);
 
           graphics.dispose();
 
@@ -117,6 +119,7 @@ public class NewYearCommand implements MbotCommand {
         }
 
         ByteArrayOutputStream finalOutputStream = outputStream;
+        Files.write(Path.of("out.gif"), finalOutputStream.toByteArray());
         return event
             .getMessage()
             .getChannel()
@@ -124,22 +127,26 @@ public class NewYearCommand implements MbotCommand {
                 c -> {
                   final var embed =
                       EmbedCreateSpec.builder()
-                          .title("Happy Smol Year, #" + tokenId + "!")
+                          .title("Happy Swol Year, #" + tokenId + "!")
                           .author(
                               "SmolBot",
                               null,
                               "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
-                          .image("attachment://" + tokenId + "_fun." + (isAnimated ? "gif" : "png"))
+                          .image(
+                              "attachment://swol_"
+                                  + tokenId
+                                  + "_fun."
+                                  + (isAnimated ? "gif" : "png"))
                           .addField(
                               "Notes",
-                              "You can use !newyear <id> anim for animated gif, and !newyear <token> for a single frame. Happy New Year from `commonopoly` x `Cure For Optimism`",
+                              "You can use !swolnewyear <id> anim for animated gif, and !swolnewyear <token> for a single frame. Happy New Year from `commonopoly` x `Cure For Optimism`",
                               true)
                           .build();
 
                   return c.createMessage(
                       MessageCreateSpec.builder()
                           .addFile(
-                              tokenId + "_fun." + (isAnimated ? "gif" : "png"),
+                              "swol_" + tokenId + "_fun." + (isAnimated ? "gif" : "png"),
                               new ByteArrayInputStream(finalOutputStream.toByteArray()))
                           .addEmbed(embed)
                           .build());
