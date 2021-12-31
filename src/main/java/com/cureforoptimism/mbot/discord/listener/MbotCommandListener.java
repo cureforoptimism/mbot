@@ -45,7 +45,7 @@ public class MbotCommandListener {
             .block();
       }
     } catch (Exception ex) {
-      log.error("Error received in listener loop. Will resume.");
+      log.error("Error received in listener loop. Will resume.", ex);
     }
   }
 }

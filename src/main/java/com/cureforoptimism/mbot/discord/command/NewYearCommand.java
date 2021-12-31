@@ -24,7 +24,7 @@ import reactor.core.publisher.Mono;
 
 @Component
 public class NewYearCommand implements MbotCommand {
-  private List<BufferedImage> hatFrames = new ArrayList<>();
+  private final List<BufferedImage> hatFrames = new ArrayList<>();
   private final Utilities utilities;
 
   public NewYearCommand(Utilities utilities) {
@@ -117,7 +117,6 @@ public class NewYearCommand implements MbotCommand {
         }
 
         ByteArrayOutputStream finalOutputStream = outputStream;
-        //        Files.write(Path.of("out.gif"), finalOutputStream.toByteArray());
         return event
             .getMessage()
             .getChannel()

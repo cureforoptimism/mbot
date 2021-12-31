@@ -2,6 +2,8 @@ package com.cureforoptimism.mbot.service;
 
 import com.cureforoptimism.mbot.application.DiscordBot;
 import com.litesoftwares.coingecko.CoinGeckoApiClient;
+import com.litesoftwares.coingecko.domain.Coins.CoinFullData;
+import lombok.Getter;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -10,6 +12,7 @@ public class CoinGeckoService implements MagicValueService {
   private final CoinGeckoApiClient client;
   private final DiscordBot discordClient;
   private final boolean enabled = false;
+  @Getter private CoinFullData coinFullData;
 
   public CoinGeckoService(CoinGeckoApiClient client, DiscordBot discordClient) {
     this.client = client;
@@ -17,7 +20,9 @@ public class CoinGeckoService implements MagicValueService {
   }
 
   @Scheduled(fixedDelay = 30000)
-  public void refreshMagicPrice() {
+  public synchronized void refreshMagicPrice() {
+    this.coinFullData = client.getCoinById("magic");
+
     if (!enabled) {
       return;
     }
