@@ -59,8 +59,10 @@ public class TwitterBot {
               .findFirstByTweetedIsTrueOrderByBlockTimestampDesc()
               .getBlockTimestamp();
     }
+
+    // Can uncomment and replace with recent ID to test new functionality (delete existing tweet
+    // first!)
     //    List<SmolSale> newSales =
-    //
     // smolSalesRepository.findById("https://arbiscan.io/tx/0x7fc9d0a8c1961e200dd1bfcf5ca78fd23f04c5f96023fdc7c9de6e9b16b1d75b").stream().toList();
 
     List<SmolSale> newSales =
@@ -111,7 +113,7 @@ public class TwitterBot {
                 .text(
                     "Smol Brains #"
                         + smolSale.getTokenId()
-                        + " (Rarity Rank # "
+                        + " (Rarity Rank #"
                         + rarityRank.getRank()
                         + ")\nSold for\nMAGIC: "
                         + decimalFormatOptionalZeroes.format(smolSale.getSalePrice())
