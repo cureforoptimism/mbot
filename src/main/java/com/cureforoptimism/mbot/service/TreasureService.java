@@ -5,6 +5,7 @@ import static com.cureforoptimism.mbot.Constants.*;
 import com.cureforoptimism.mbot.domain.*;
 import com.cureforoptimism.mbot.repository.SmolBodyRepository;
 import com.cureforoptimism.mbot.repository.SmolRepository;
+import com.cureforoptimism.mbot.repository.SmolSalesRepository;
 import com.cureforoptimism.mbot.repository.VroomTraitsRepository;
 import com.madgag.gif.fmsware.AnimatedGifEncoder;
 import com.smolbrains.SmolBodiesContract;
@@ -57,6 +58,7 @@ public class TreasureService {
   final SmolBodyRepository smolBodyRepository;
   final VroomTraitsRepository vroomTraitsRepository;
   final FloorService floorService;
+  final SmolSalesRepository smolSalesRepository;
 
   public TreasureService(
       SmolBrainsContract smolBrainsContract,
@@ -65,7 +67,8 @@ public class TreasureService {
       VroomTraitsRepository vroomTraitsRepository,
       SmolBodiesContract smolBodiesContract,
       SmolBodyRepository smolBodyRepository,
-      FloorService floorService) {
+      FloorService floorService,
+      SmolSalesRepository smolSalesRepository) {
     this.smolBrainsContract = smolBrainsContract;
     this.smolBrainsVroomContract = smolBrainsVroomContract;
     this.vroomTraitsRepository = vroomTraitsRepository;
@@ -73,6 +76,7 @@ public class TreasureService {
     this.smolBodiesContract = smolBodiesContract;
     this.smolBodyRepository = smolBodyRepository;
     this.floorService = floorService;
+    this.smolSalesRepository = smolSalesRepository;
   }
 
   public BigDecimal getIq(int tokenId) {
@@ -325,6 +329,51 @@ public class TreasureService {
     }
 
     return null;
+  }
+
+  @Scheduled(fixedDelay = 60000)
+  public synchronized void updateLatestSales() {
+    String jsonBody =
+        "{\"query\":\"{\\n  collection(id: \\\"0x6325439389e0797ab35752b4f43a14c004f22a9c\\\") {\\n  listings(first: 100, where: {status: Sold}, orderBy: blockTimestamp, orderDirection: desc) {\\n    blockTimestamp\\n    token {\\n      tokenId\\n    }\\n    buyer {\\n      id\\n    }\\n    collectionName\\n    nicePrice\\n    pricePerItem\\n    quantity\\n    tokenName\\n    totalPrice\\n    transactionLink    \\n  }\\n  }\\n}\\n\",\"variables\":null}";
+    try {
+      HttpClient httpClient = HttpClient.newHttpClient();
+      HttpRequest request =
+          HttpRequest.newBuilder(
+                  new URI("https://api.thegraph.com/subgraphs/name/wyze/treasure-marketplace"))
+              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+              .header("Content-Type", "application/json")
+              .build();
+
+      HttpResponse<String> response =
+          httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      JSONObject obj =
+          new JSONObject(response.body()).getJSONObject("data").getJSONObject("collection");
+      JSONArray listings = obj.getJSONArray("listings");
+
+      MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
+
+      for (int x = 0; x < listings.length(); x++) {
+        final var listing = listings.getJSONObject(x);
+
+        String transactionId = listing.getString("transactionLink");
+        if (!smolSalesRepository.existsById(transactionId)) {
+          int tokenId = listing.getJSONObject("token").getInt("tokenId");
+          BigDecimal pricePerItem = new BigDecimal(listing.getBigInteger("pricePerItem"), 18, mc);
+          Date blockTimeStamp = new Date(listing.getLong("blockTimestamp") * 1000);
+
+          smolSalesRepository.save(
+              SmolSale.builder()
+                  .id(transactionId)
+                  .tokenId(tokenId)
+                  .salePrice(pricePerItem)
+                  .blockTimestamp(blockTimeStamp)
+                  .tweeted(false)
+                  .build());
+        }
+      }
+    } catch (Exception ex) {
+      log.error("Exception updating latest sales", ex);
+    }
   }
 
   @Scheduled(fixedDelay = 60000)

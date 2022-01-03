@@ -17,14 +17,46 @@ public class TokenService {
   private String file;
 
   public String getDiscordToken() {
+    return getPropertyValue("discord_access_token");
+  }
+
+  public String getTwitterApiKey() {
+    return getPropertyValue("twitter_api_key");
+  }
+
+  public String getTwitterApiSecret() {
+    return getPropertyValue("twitter_api_secret");
+  }
+
+  public String getTwitterApiToken() {
+    return getPropertyValue("twitter_access_token");
+  }
+
+  public String getTwitterApiTokenSecret() {
+    return getPropertyValue("twitter_access_token_secret");
+  }
+
+  public String getTwitterApiBearerToken() {
+    return getPropertyValue("twitter_api_bearer_token");
+  }
+
+  public String getTwitterApiOauthClientId() {
+    return getPropertyValue("twitter_oauth_client_id");
+  }
+
+  public String getTwitterApiOAuthSecret() {
+    return getPropertyValue("twitter_oauth_secret");
+  }
+
+  private String getPropertyValue(String key) {
     ClassPathResource classPathResource = new ClassPathResource(file);
 
     try (InputStream input = classPathResource.getInputStream()) {
       Properties properties = new Properties();
       properties.load(input);
-      return properties.get("discord_access_token").toString();
+      return properties.get(key).toString();
     } catch (IOException ex) {
-      log.error("Unable to retrieve Discord token", ex);
+      log.error("Unable to retrieve token", ex);
     }
 
     return null;
