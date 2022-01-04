@@ -5,6 +5,7 @@ import com.litesoftwares.coingecko.CoinGeckoApiClient;
 import com.litesoftwares.coingecko.impl.CoinGeckoApiClientImpl;
 import com.smolbrains.SmolBodiesContract;
 import com.smolbrains.SmolBrainsContract;
+import com.smolbrains.SmolBrainsRocketContract;
 import com.smolbrains.SmolBrainsVroomContract;
 import io.github.redouane59.twitter.TwitterClient;
 import io.github.redouane59.twitter.signature.TwitterCredentials;
@@ -40,6 +41,26 @@ public class SpringConfiguration {
   @Bean
   public Web3j web3j() {
     return Web3j.build(new HttpService("https://arb1.arbitrum.io/rpc"));
+  }
+
+  @Bean
+  public SmolBrainsRocketContract smolBrainsRocketContract() {
+    ContractGasProvider contractGasProvider = new DefaultGasProvider();
+
+    try {
+      Credentials dummyCredentials = Credentials.create(Keys.createEcKeyPair());
+      return SmolBrainsRocketContract.load(
+          "0x8957A18a77451d762dE204b61EA4F858Bb3bED4d",
+          web3j(),
+          dummyCredentials,
+          contractGasProvider);
+
+    } catch (InvalidAlgorithmParameterException
+        | NoSuchAlgorithmException
+        | NoSuchProviderException ex) {
+      log.error("unable to create dummy credentials", ex);
+      return null;
+    }
   }
 
   @Bean

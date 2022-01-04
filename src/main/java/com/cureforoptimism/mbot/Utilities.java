@@ -11,6 +11,7 @@ import com.inamik.text.tables.grid.Border;
 import com.inamik.text.tables.grid.Util;
 import com.smolbrains.SmolBodiesContract;
 import com.smolbrains.SmolBrainsContract;
+import com.smolbrains.SmolBrainsRocketContract;
 import com.smolbrains.SmolBrainsVroomContract;
 import discord4j.core.spec.EmbedCreateSpec;
 import java.awt.image.BufferedImage;
@@ -47,6 +48,7 @@ public class Utilities {
   private final SmolBrainsContract smolBrainsContract;
   private final VroomRarityRankRepository vroomRarityRankRepository;
   private final SmolBodyRarityRankRepository smolBodyRarityRankRepository;
+  private final SmolBrainsRocketContract smolBrainsRocketContract;
   private String smolBaseUri;
   private String vroomBaseUri;
   private String smolBodyBaseUri;
@@ -61,7 +63,8 @@ public class Utilities {
       VroomRarityRankRepository vroomRarityRankRepository,
       SmolBodyTraitsRepository smolBodyTraitsRepository,
       SmolBodyRarityRankRepository smolBodyRarityRankRepository,
-      SmolBodiesContract smolBodiesContract) {
+      SmolBodiesContract smolBodiesContract,
+      SmolBrainsRocketContract smolBrainsRocketContract) {
     this.treasureService = treasureService;
     this.rarityRankRepository = rarityRankRepository;
     this.traitsRepository = traitsRepository;
@@ -72,6 +75,7 @@ public class Utilities {
     this.smolBodyRarityRankRepository = smolBodyRarityRankRepository;
     this.smolBodiesContract = smolBodiesContract;
     this.smolBrainsContract = smolBrainsContract;
+    this.smolBrainsRocketContract = smolBrainsRocketContract;
 
     try {
       this.smolBaseUri = smolBrainsContract.baseURI().send();
@@ -95,7 +99,18 @@ public class Utilities {
       return Optional.empty();
     }
 
-    output.append("IQ: ").append(treasureService.getIq(smolId)).append("\n\n");
+    output.append("IQ: ").append(treasureService.getIq(smolId)).append("\n");
+    try {
+      output
+          .append("Boarded \uD83D\uDE80: ")
+          .append(
+              smolBrainsRocketContract.boardedBeforeDeadline(new BigInteger(id)).send()
+                  ? "Yes!"
+                  : "Nope.");
+    } catch (Exception e) {
+      output.append("Nope.");
+    }
+    output.append("\n\n");
 
     List<Trait> traits = traitsRepository.findBySmol_Id(smolLongId);
     RarityRank rarityRank = rarityRankRepository.findBySmolId(smolLongId);
