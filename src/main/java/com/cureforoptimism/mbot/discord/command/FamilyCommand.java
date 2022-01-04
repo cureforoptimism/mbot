@@ -111,15 +111,18 @@ public class FamilyCommand implements MbotCommand {
 
         description.append("\nTotal IQ in family: ").append(totalIq);
 
-        description.append("\n\nVROOMS\n");
-        for (Integer vroomId : vroomIds) {
-          VroomRarityRank rarityRank = vroomRarityRankRepository.findBySmolId(vroomId.longValue());
-          description
-              .append("#")
-              .append(vroomId)
-              .append(" (Rank ")
-              .append(rarityRank.getRank())
-              .append(")\n");
+        if (!vroomIds.isEmpty()) {
+          description.append("\n\nVROOMS\n");
+          for (Integer vroomId : vroomIds) {
+            VroomRarityRank rarityRank =
+                vroomRarityRankRepository.findBySmolId(vroomId.longValue());
+            description
+                .append("#")
+                .append(vroomId)
+                .append(" (Rank ")
+                .append(rarityRank.getRank())
+                .append(")\n");
+          }
         }
 
         // Let's see how horrible of an idea it would be to build a composite image
@@ -139,7 +142,8 @@ public class FamilyCommand implements MbotCommand {
                   imgOpt.ifPresent(vroomImages::add);
                 });
 
-        final var maxWidth = smolImages.get(0).getWidth() * smolImages.size();
+        final var maxWidth =
+            smolImages.get(0).getWidth() * Math.max(smolImages.size(), vroomImages.size());
         final var maxHeight = smolImages.get(0).getHeight() * 2; // 2 is SMOL, VROOM
         BufferedImage output = new BufferedImage(maxWidth, maxHeight, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = output.createGraphics();
