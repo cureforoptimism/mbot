@@ -44,7 +44,6 @@ public class Utilities {
   private final VroomTraitsRepository vroomTraitsRepository;
   private final SmolBodyTraitsRepository smolBodyTraitsRepository;
   private final SmolBrainsVroomContract smolBrainsVroomContract;
-  private final SmolBodiesContract smolBodiesContract;
   private final SmolBrainsContract smolBrainsContract;
   private final VroomRarityRankRepository vroomRarityRankRepository;
   private final SmolBodyRarityRankRepository smolBodyRarityRankRepository;
@@ -73,7 +72,6 @@ public class Utilities {
     this.vroomRarityRankRepository = vroomRarityRankRepository;
     this.smolBodyTraitsRepository = smolBodyTraitsRepository;
     this.smolBodyRarityRankRepository = smolBodyRarityRankRepository;
-    this.smolBodiesContract = smolBodiesContract;
     this.smolBrainsContract = smolBrainsContract;
     this.smolBrainsRocketContract = smolBrainsRocketContract;
 
@@ -149,7 +147,7 @@ public class Utilities {
     try {
       return Optional.of(
           EmbedCreateSpec.builder()
-              .title("SMOL #" + id + "\nRANK: #" + rarityRank.getRank() + " (WIP)")
+              .title("SMOL #" + id + "\nRANK: #" + rarityRank.getRank() + " (Unofficial)")
               .author(
                   "SmolBot",
                   null,
@@ -590,16 +588,18 @@ public class Utilities {
     Map<String, Map<String, Double>> rarityCache = new HashMap<>();
     Map<Long, Double> smolScores = new HashMap<>();
 
-    Set<Long> knownRares = new HashSet<>();
-    knownRares.add(0L); // spacesuit
-    knownRares.add(224L);
-    knownRares.add(1690L);
-    knownRares.add(4579L);
-    knownRares.add(5093L);
-    knownRares.add(2430L);
-    knownRares.add(3232L); // brain
-    knownRares.add(3391L);
-    knownRares.add(5203L); // gold
+    Set<Long> knownUniques = new TreeSet<>();
+    knownUniques.add(0L); // spacesuit
+    knownUniques.add(1690L);
+    knownUniques.add(4579L);
+    knownUniques.add(5093L);
+    knownUniques.add(2430L);
+    knownUniques.add(3391L);
+    knownUniques.add(5203L); // gold
+
+    Set<Long> knownClearBrains = new HashSet<>();
+    knownClearBrains.add(224L); // brain
+    knownClearBrains.add(3232L); // brain
 
     for (long x = 0; x <= SMOL_HIGHEST_ID; x++) {
       double currentScore = 0.0f;
@@ -619,20 +619,23 @@ public class Utilities {
 
         // Apply weights for rare traits
         final var percentage = rarityCache.get(trait.getType()).get(trait.getValue());
-        if (knownRares.contains(x)) {
-          if (x == 0) {
-            currentScore -= 400.0;
-          } else {
-            // Unique; heavy weight
-            currentScore -= 300.0;
-          }
-        } else if (percentage < 0.65d) {
+        if (percentage < 0.65d) {
           currentScore -= 150;
         } else if (percentage < 0.8d) {
           currentScore -= 100;
         }
 
         currentScore += rarityCache.get(trait.getType()).get(trait.getValue());
+      }
+
+      if (knownUniques.contains(x)) {
+        currentScore = -100.0d;
+      } else if (knownClearBrains.contains(x)) {
+        currentScore = -99.0d;
+      }
+
+      if (x % 100 == 0) {
+        log.info("Generated " + x);
       }
 
       smolScores.put(x, currentScore);
