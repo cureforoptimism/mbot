@@ -2,6 +2,8 @@ package com.cureforoptimism.mbot.discord.command;
 
 import com.cureforoptimism.mbot.Utilities;
 import com.cureforoptimism.mbot.domain.SmolType;
+import com.cureforoptimism.mbot.domain.Trait;
+import com.cureforoptimism.mbot.repository.TraitsRepository;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
@@ -14,6 +16,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 import javax.imageio.ImageIO;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -22,14 +25,25 @@ import reactor.core.publisher.Mono;
 @Component
 public class SpaceCommand implements MbotCommand {
   private final Utilities utilities;
+  private final TraitsRepository traitsRepository;
   private BufferedImage suitDefault;
+  private BufferedImage suitPipeFix;
+  private BufferedImage suitGumFix;
+  private BufferedImage suitArmorFix;
 
-  public SpaceCommand(Utilities utilities) {
+  public SpaceCommand(Utilities utilities, TraitsRepository traitsRepository) {
     this.utilities = utilities;
+    this.traitsRepository = traitsRepository;
 
     try {
       this.suitDefault =
           ImageIO.read(new ClassPathResource("smol-space-suit.png").getInputStream());
+      this.suitPipeFix =
+          ImageIO.read(new ClassPathResource("smol-space-suit-mouth-fix.png").getInputStream());
+      this.suitGumFix =
+          ImageIO.read(new ClassPathResource("smol-space-suit-gum.png").getInputStream());
+      this.suitArmorFix =
+          ImageIO.read(new ClassPathResource("smol-space-suit-armor.png").getInputStream());
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -63,6 +77,25 @@ public class SpaceCommand implements MbotCommand {
             new URI(utilities.getSmolImage(tokenId, SmolType.SMOL, false).orElse(""));
         final var imageSmol = ImageIO.read(smolUri.toURL());
 
+        boolean usePipeFix = false;
+        boolean useGumFix = false;
+        boolean useArmorFix = false;
+        List<Trait> traits = traitsRepository.findBySmol_Id(Long.parseLong(tokenId));
+        for (Trait trait : traits) {
+          if (trait.getType().equalsIgnoreCase("mouth")) {
+            String mouth = trait.getValue();
+            if (mouth.equalsIgnoreCase("gum")) {
+              useGumFix = true;
+              break;
+            } else if (mouth.equalsIgnoreCase("pipe")) {
+              usePipeFix = true;
+              break;
+            } else if (mouth.equalsIgnoreCase("armor")) {
+              useArmorFix = true;
+            }
+          }
+        }
+
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         BufferedImage output =
@@ -72,13 +105,21 @@ public class SpaceCommand implements MbotCommand {
         graphics.setComposite(AlphaComposite.SrcOver);
 
         graphics.drawImage(imageSmol, 0, 0, null);
-        graphics.drawImage(suitDefault, 0, 0, null);
+
+        if (useGumFix) {
+          graphics.drawImage(suitGumFix, 0, 0, null);
+        } else if (usePipeFix) {
+          graphics.drawImage(suitPipeFix, 0, 0, null);
+        } else if (useArmorFix) {
+          graphics.drawImage(suitArmorFix, 0, 0, null);
+        } else {
+          graphics.drawImage(suitDefault, 0, 0, null);
+        }
 
         graphics.dispose();
 
         ImageIO.write(output, "png", outputStream);
 
-        ByteArrayOutputStream finalOutputStream = outputStream;
         return event
             .getMessage()
             .getChannel()
@@ -105,7 +146,7 @@ public class SpaceCommand implements MbotCommand {
                       MessageCreateSpec.builder()
                           .addFile(
                               tokenId + "space.png",
-                              new ByteArrayInputStream(finalOutputStream.toByteArray()))
+                              new ByteArrayInputStream(outputStream.toByteArray()))
                           .addEmbed(embed)
                           .build());
                 });
