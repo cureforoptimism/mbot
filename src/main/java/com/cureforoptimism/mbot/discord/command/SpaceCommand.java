@@ -73,6 +73,12 @@ public class SpaceCommand implements MbotCommand {
       String tokenId = parts[1];
 
       try {
+        Long.parseLong(tokenId);
+      } catch (Exception ex) {
+        return Mono.empty();
+      }
+
+      try {
         final var smolUri =
             new URI(utilities.getSmolImage(tokenId, SmolType.SMOL, false).orElse(""));
         final var imageSmol = ImageIO.read(smolUri.toURL());

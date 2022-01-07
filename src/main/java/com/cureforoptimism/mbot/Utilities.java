@@ -1,9 +1,24 @@
 package com.cureforoptimism.mbot;
 
-import static com.cureforoptimism.mbot.Constants.*;
+import static com.cureforoptimism.mbot.Constants.SMOL_BODY_HIGHEST_ID;
+import static com.cureforoptimism.mbot.Constants.SMOL_BODY_TOTAL_SUPPLY;
+import static com.cureforoptimism.mbot.Constants.SMOL_HIGHEST_ID;
+import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
+import static com.cureforoptimism.mbot.Constants.SMOL_VROOM_TOTAL_SUPPLY;
 
-import com.cureforoptimism.mbot.domain.*;
-import com.cureforoptimism.mbot.repository.*;
+import com.cureforoptimism.mbot.domain.RarityRank;
+import com.cureforoptimism.mbot.domain.SmolBodyRarityRank;
+import com.cureforoptimism.mbot.domain.SmolBodyTrait;
+import com.cureforoptimism.mbot.domain.SmolType;
+import com.cureforoptimism.mbot.domain.Trait;
+import com.cureforoptimism.mbot.domain.VroomRarityRank;
+import com.cureforoptimism.mbot.domain.VroomTrait;
+import com.cureforoptimism.mbot.repository.RarityRankRepository;
+import com.cureforoptimism.mbot.repository.SmolBodyRarityRankRepository;
+import com.cureforoptimism.mbot.repository.SmolBodyTraitsRepository;
+import com.cureforoptimism.mbot.repository.TraitsRepository;
+import com.cureforoptimism.mbot.repository.VroomRarityRankRepository;
+import com.cureforoptimism.mbot.repository.VroomTraitsRepository;
 import com.cureforoptimism.mbot.service.TreasureService;
 import com.inamik.text.tables.GridTable;
 import com.inamik.text.tables.SimpleTable;
@@ -28,7 +43,15 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import javax.imageio.ImageIO;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
@@ -97,14 +120,39 @@ public class Utilities {
       return Optional.empty();
     }
 
+    boolean boarded = false;
+    boolean boardedBeforeDeadline = false;
+    Date boardingTime = null;
+
+    try {
+      final var boardingTimeEpoch =
+          smolBrainsRocketContract.timestampJoined(new BigInteger(id)).send();
+
+      boarded = !boardingTimeEpoch.equals(BigInteger.ZERO);
+      boardingTime = new Date(boardingTimeEpoch.longValue() * 1000);
+
+      // NOTE: Using the contract API for this; the deadline was adjusted in the contract recently
+      boardedBeforeDeadline =
+          smolBrainsRocketContract.boardedBeforeDeadline(new BigInteger(id)).send();
+    } catch (Exception ex) {
+      // no-op; execution failed means not boarded
+    }
+
     output.append("IQ: ").append(treasureService.getIq(smolId)).append("\n");
     try {
-      output
-          .append("Boarded \uD83D\uDE80: ")
-          .append(
-              smolBrainsRocketContract.boardedBeforeDeadline(new BigInteger(id)).send()
-                  ? "Yes!"
-                  : "Nope.");
+      output.append("Currently boarded \uD83D\uDE80: ").append(boarded ? "Yes!" : "Nope.");
+
+      if (boarded && boardingTime != null) {
+        output
+            .append(" Boarded at <t:")
+            .append(boardingTime.getTime() / 1000)
+            .append(":f>")
+            .append(", ")
+            .append(
+                boardedBeforeDeadline
+                    ? "before first snapshot deadline."
+                    : "**after** first snapshot deadline.");
+      }
     } catch (Exception e) {
       output.append("Nope.");
     }

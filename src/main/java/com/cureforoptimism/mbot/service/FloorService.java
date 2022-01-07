@@ -236,7 +236,7 @@ public class FloorService {
     dataset.addSeries(landSeries);
 
     JFreeChart chart =
-        ChartFactory.createTimeSeriesChart("Smoliverse Floor", "wen", "MAGIC", dataset);
+        ChartFactory.createTimeSeriesChart("Smolverse Floor", "wen", "MAGIC", dataset);
 
     final var theme = createSmoliverseTheme();
     theme.apply(chart);
@@ -311,7 +311,7 @@ public class FloorService {
     datasetUsd.addSeries(landSeriesUsd);
 
     JFreeChart chartUsd =
-        ChartFactory.createTimeSeriesChart("Smoliverse Floor", "wen", "USD $", datasetUsd);
+        ChartFactory.createTimeSeriesChart("Smolverse Floor", "wen", "USD $", datasetUsd);
 
     theme.apply(chartUsd);
 
