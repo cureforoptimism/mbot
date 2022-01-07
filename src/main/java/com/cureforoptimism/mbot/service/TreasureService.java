@@ -137,6 +137,13 @@ public class TreasureService {
           String trait = obj.getString("trait_type");
           String value = obj.get("value").toString();
 
+          // hot fix for bad metadata
+          if(value.equalsIgnoreCase("dark-brown")) {
+            value = "dark_brown";
+          } else if(value.equalsIgnoreCase("red")) {
+            value = "orange";
+          }
+
           traits.add(
               Trait.builder()
                   .type(trait)
