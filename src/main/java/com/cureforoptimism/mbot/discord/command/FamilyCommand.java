@@ -197,7 +197,7 @@ public class FamilyCommand implements MbotCommand {
               imageToBufferedImage(Toolkit.getDefaultToolkit().createImage(imageProducer)));
         }
 
-        final var maxSmolWidths = (smolImagesTransparent.size() * 130) + 120;
+        final var maxSmolWidths = (smolImagesTransparent.size() * 130) + 130;
 
         BufferedImage output = new BufferedImage(maxSmolWidths, 350, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = output.createGraphics();
@@ -209,7 +209,7 @@ public class FamilyCommand implements MbotCommand {
         for (BufferedImage smolImage : smolImagesTransparent) {
           xOffset -= 130;
           graphics.setComposite(AlphaComposite.SrcOver);
-          graphics.drawImage(smolImage, xOffset - 50, 0, null);
+          graphics.drawImage(smolImage, xOffset - 55, 0, null);
         }
 
         ByteArrayOutputStream smolOutputStream = new ByteArrayOutputStream();

@@ -10,7 +10,13 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
 import java.awt.AlphaComposite;
 import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
+import java.awt.image.FilteredImageSource;
+import java.awt.image.ImageFilter;
+import java.awt.image.ImageProducer;
+import java.awt.image.RGBImageFilter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -18,6 +24,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import javax.imageio.ImageIO;
+import org.imgscalr.Scalr;
+import org.imgscalr.Scalr.Mode;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -30,12 +38,14 @@ public class SpaceCommand implements MbotCommand {
   private BufferedImage suitPipeFix;
   private BufferedImage suitGumFix;
   private BufferedImage suitArmorFix;
+  private BufferedImage imgGalaxy;
 
   public SpaceCommand(Utilities utilities, TraitsRepository traitsRepository) {
     this.utilities = utilities;
     this.traitsRepository = traitsRepository;
 
     try {
+      this.imgGalaxy = ImageIO.read(new ClassPathResource("galaxy.png").getInputStream());
       this.suitDefault =
           ImageIO.read(new ClassPathResource("smol-space-suit.png").getInputStream());
       this.suitPipeFix =
@@ -81,7 +91,7 @@ public class SpaceCommand implements MbotCommand {
       try {
         final var smolUri =
             new URI(utilities.getSmolImage(tokenId, SmolType.SMOL, false).orElse(""));
-        final var imageSmol = ImageIO.read(smolUri.toURL());
+        var imageSmol = ImageIO.read(smolUri.toURL());
 
         boolean usePipeFix = false;
         boolean useGumFix = false;
@@ -102,13 +112,39 @@ public class SpaceCommand implements MbotCommand {
           }
         }
 
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        final var transparentColor = imageSmol.getRGB(0, 0);
+        ImageFilter imageFilter =
+            new RGBImageFilter() {
+              @Override
+              public int filterRGB(int x, int y, int rgb) {
+                if ((rgb | 0xFF000000) == transparentColor) {
+                  return 0x00FFFFFF & rgb;
+                }
 
+                return rgb;
+              }
+            };
+
+        ImageProducer imageProducer = new FilteredImageSource(imageSmol.getSource(), imageFilter);
+        Image imgSmol = Toolkit.getDefaultToolkit().createImage(imageProducer);
+
+        BufferedImage transparentImg =
+            new BufferedImage(
+                imgSmol.getWidth(null), imgSmol.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = transparentImg.createGraphics();
+        g2.drawImage(imgSmol, 0, 0, null);
+        g2.dispose();
+
+        imageSmol = transparentImg;
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         BufferedImage output =
             new BufferedImage(
                 imageSmol.getWidth(), imageSmol.getHeight(), BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = output.createGraphics();
         graphics.setComposite(AlphaComposite.SrcOver);
+        graphics.setComposite(AlphaComposite.SrcOver);
+        graphics.drawImage(Scalr.resize(imgGalaxy, Mode.FIT_EXACT, 350), 0, 0, null);
 
         graphics.drawImage(imageSmol, 0, 0, null);
 
@@ -133,10 +169,7 @@ public class SpaceCommand implements MbotCommand {
                 c -> {
                   final var embed =
                       EmbedCreateSpec.builder()
-                          .title(
-                              "Captain's Log, Smoldate 53391.3: The Smolerprise is departing from Land. Crew includes #"
-                                  + tokenId
-                                  + "!")
+                          .title("Ground control to Major Smol! Crew includes #" + tokenId + "!")
                           .author(
                               "SmolBot",
                               null,
