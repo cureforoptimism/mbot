@@ -209,7 +209,7 @@ public class FamilyCommand implements MbotCommand {
         for (BufferedImage smolImage : smolImagesTransparent) {
           xOffset -= 130;
           graphics.setComposite(AlphaComposite.SrcOver);
-          graphics.drawImage(smolImage, xOffset - 55, 0, null);
+          graphics.drawImage(smolImage, xOffset - 40, 0, null);
         }
 
         ByteArrayOutputStream smolOutputStream = new ByteArrayOutputStream();
