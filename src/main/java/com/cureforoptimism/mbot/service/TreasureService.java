@@ -138,9 +138,9 @@ public class TreasureService {
           String value = obj.get("value").toString();
 
           // hot fix for bad metadata
-          if(value.equalsIgnoreCase("dark-brown")) {
+          if (value.equalsIgnoreCase("dark-brown")) {
             value = "dark_brown";
-          } else if(trait.equalsIgnoreCase("body") && value.equalsIgnoreCase("red")) {
+          } else if (trait.equalsIgnoreCase("body") && value.equalsIgnoreCase("red")) {
             value = "orange";
           }
 
@@ -158,7 +158,7 @@ public class TreasureService {
           rarityMap.get(trait).merge(value, 1, Integer::sum);
         }
 
-        if(x % 50 == 0) {
+        if (x % 50 == 0) {
           log.info("GENERATED " + x);
         }
 

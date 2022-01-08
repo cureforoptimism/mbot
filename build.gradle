@@ -50,6 +50,7 @@ dependencies {
     implementation 'org.web3j:core:5.0.0'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa:2.6.2'
     implementation 'org.jfree:jfreechart:1.5.3'
+    implementation 'org.imgscalr:imgscalr-lib:4.2'
     implementation 'io.github.redouane59.twitter:twittered:2.14'
     runtimeOnly 'mysql:mysql-connector-java:8.0.25'
     compileOnly 'org.projectlombok:lombok:1.18.22'
