@@ -140,7 +140,7 @@ public class TreasureService {
           // hot fix for bad metadata
           if(value.equalsIgnoreCase("dark-brown")) {
             value = "dark_brown";
-          } else if(value.equalsIgnoreCase("red")) {
+          } else if(trait.equalsIgnoreCase("body") && value.equalsIgnoreCase("red")) {
             value = "orange";
           }
 
@@ -157,6 +157,11 @@ public class TreasureService {
 
           rarityMap.get(trait).merge(value, 1, Integer::sum);
         }
+
+        if(x % 50 == 0) {
+          log.info("GENERATED " + x);
+        }
+
         smolRepository.save(Smol.builder().id((long) x).traits(traits).build());
       }
     } catch (Exception e) {
