@@ -2,6 +2,7 @@ package com.cureforoptimism.mbot.discord.command;
 
 import com.cureforoptimism.mbot.domain.SmolBodyRarityRank;
 import com.cureforoptimism.mbot.repository.SmolBodyRarityRankRepository;
+import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
@@ -54,5 +55,10 @@ public class Top20SwolsCommand implements MbotCommand {
             .description(ranks.toString())
             .build();
     return event.getMessage().getChannel().flatMap(c -> c.createMessage(msg));
+  }
+
+  @Override
+  public Mono<Void> handle(ChatInputInteractionEvent event) {
+    return null;
   }
 }

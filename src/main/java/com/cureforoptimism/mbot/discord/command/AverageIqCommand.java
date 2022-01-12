@@ -1,6 +1,7 @@
 package com.cureforoptimism.mbot.discord.command;
 
 import com.smolbrains.SmolBrainsContract;
+import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import java.math.BigDecimal;
@@ -48,5 +49,10 @@ public class AverageIqCommand implements MbotCommand {
                 return Mono.empty();
               }
             });
+  }
+
+  @Override
+  public Mono<Void> handle(ChatInputInteractionEvent event) {
+    return null;
   }
 }

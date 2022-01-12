@@ -3,6 +3,7 @@ package com.cureforoptimism.mbot.discord.command;
 import com.cureforoptimism.mbot.application.DiscordBot;
 import com.cureforoptimism.mbot.service.CoinGeckoService;
 import com.litesoftwares.coingecko.domain.Coins.CoinFullData;
+import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateFields.Footer;
@@ -111,5 +112,10 @@ public class MagicCommand implements MbotCommand {
                                 "https://miro.medium.com/fit/c/262/262/1*GQz1T6gRmenQRhTS-aWiLA.png"))
                         .timestamp(Instant.now())
                         .build()));
+  }
+
+  @Override
+  public Mono<Void> handle(ChatInputInteractionEvent event) {
+    return null;
   }
 }

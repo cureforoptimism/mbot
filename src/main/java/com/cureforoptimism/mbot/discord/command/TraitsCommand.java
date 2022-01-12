@@ -2,6 +2,7 @@ package com.cureforoptimism.mbot.discord.command;
 
 import com.cureforoptimism.mbot.Utilities;
 import com.cureforoptimism.mbot.repository.TraitsRepository;
+import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import java.util.HashMap;
@@ -79,5 +80,10 @@ public class TraitsCommand implements MbotCommand {
       String finalOutput = output.toString();
       return event.getMessage().getChannel().flatMap(c -> c.createMessage(finalOutput));
     }
+  }
+
+  @Override
+  public Mono<Void> handle(ChatInputInteractionEvent event) {
+    return null;
   }
 }

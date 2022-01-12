@@ -3,12 +3,12 @@ package com.cureforoptimism.mbot.discord.command;
 import com.cureforoptimism.mbot.Utilities;
 import com.cureforoptimism.mbot.domain.SmolType;
 import com.madgag.gif.fmsware.AnimatedGifEncoder;
+import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
-import java.awt.AlphaComposite;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -150,5 +150,10 @@ public class NewYearCommand implements MbotCommand {
     }
 
     return Mono.empty();
+  }
+
+  @Override
+  public Mono<Void> handle(ChatInputInteractionEvent event) {
+    return null;
   }
 }

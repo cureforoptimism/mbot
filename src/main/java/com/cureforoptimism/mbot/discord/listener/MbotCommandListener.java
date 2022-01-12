@@ -1,6 +1,7 @@
 package com.cureforoptimism.mbot.discord.listener;
 
 import com.cureforoptimism.mbot.discord.command.MbotCommand;
+import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import java.util.Collection;
@@ -15,6 +16,20 @@ public class MbotCommandListener {
 
   public MbotCommandListener(ApplicationContext applicationContext) {
     commands = applicationContext.getBeansOfType(MbotCommand.class).values();
+  }
+
+  public Mono<Void> handle(ChatInputInteractionEvent event) {
+    try {
+      Flux.fromIterable(commands)
+          .filter(command -> command.getName().equals(event.getCommandName()))
+          .next()
+          .flatMap(command -> command.handle(event))
+          .block();
+    } catch (Exception ex) {
+      log.error(ex.getMessage());
+    }
+
+    return Mono.empty();
   }
 
   public void handle(MessageCreateEvent event) {

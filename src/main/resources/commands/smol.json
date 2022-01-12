@@ -1,0 +1,12 @@
+{
+  "name": "smol",
+  "description": "Shows a smol IQ, rank, picture, traits, etc...",
+  "options": [
+    {
+      "name": "id",
+      "description": "Smol ID",
+      "type": 4,
+      "required": true
+    }
+  ]
+}

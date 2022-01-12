@@ -8,9 +8,11 @@ import com.cureforoptimism.mbot.application.DiscordBot;
 import com.cureforoptimism.mbot.service.FloorService;
 import com.cureforoptimism.mbot.service.TreasureService;
 import com.inamik.text.tables.SimpleTable;
+import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.core.spec.InteractionFollowupCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
@@ -26,6 +28,21 @@ public class FloorCommand implements MbotCommand {
   final TreasureService treasureService;
   final DiscordBot discordBot;
   final FloorService floorService;
+
+  private class FloorResponse {
+    EmbedCreateSpec floorEmbed;
+    EmbedCreateSpec floorMagicEmbed;
+    EmbedCreateSpec floorUsdEmbed;
+
+    FloorResponse(
+        EmbedCreateSpec floorEmbed,
+        EmbedCreateSpec floorMagicEmbed,
+        EmbedCreateSpec floorUsdEmbed) {
+      this.floorEmbed = floorEmbed;
+      this.floorMagicEmbed = floorMagicEmbed;
+      this.floorUsdEmbed = floorUsdEmbed;
+    }
+  }
 
   @Override
   public String getName() {
@@ -45,6 +62,56 @@ public class FloorCommand implements MbotCommand {
   @Override
   public Mono<Message> handle(MessageCreateEvent event) {
     log.info("!floor command received");
+
+    return event
+        .getMessage()
+        .getChannel()
+        .flatMap(
+            c -> {
+              FloorResponse floorResponse = getFloorMessage();
+
+              return c.createMessage(
+                  MessageCreateSpec.builder()
+                      .addFile(
+                          "floor.png",
+                          new ByteArrayInputStream(floorService.getCurrentFloorImageBytes()))
+                      .addFile(
+                          "floor_usd.png",
+                          new ByteArrayInputStream(floorService.getCurrentFloorUsdImageBytes()))
+                      .addEmbed(floorResponse.floorMagicEmbed)
+                      .addEmbed(floorResponse.floorUsdEmbed)
+                      .addEmbed(floorResponse.floorEmbed)
+                      .build());
+            });
+  }
+
+  @Override
+  public Mono<Void> handle(ChatInputInteractionEvent event) {
+    log.info("/floor command received");
+
+    FloorResponse floorResponse = getFloorMessage();
+
+    event
+        .deferReply()
+        .then(
+            event.createFollowup(
+                InteractionFollowupCreateSpec.builder()
+                    .addFile(
+                        "floor.png",
+                        new ByteArrayInputStream(floorService.getCurrentFloorImageBytes()))
+                    .addFile(
+                        "floor_usd.png",
+                        new ByteArrayInputStream(floorService.getCurrentFloorUsdImageBytes()))
+                    .addEmbed(floorResponse.floorMagicEmbed)
+                    .addEmbed(floorResponse.floorUsdEmbed)
+                    .addEmbed(floorResponse.floorEmbed)
+                    .build()))
+        .block();
+
+    return Mono.empty();
+  }
+
+  private FloorResponse getFloorMessage() {
     Double currentPrice = discordBot.getCurrentPrice();
 
     final var magicFloor = treasureService.getFloor();
@@ -174,43 +241,24 @@ public class FloorCommand implements MbotCommand {
             cheapestVroomId,
             Utilities.simpleTableToString(table));
 
-    return event
-        .getMessage()
-        .getChannel()
-        .flatMap(
-            c -> {
-              EmbedCreateSpec floorEmbed =
-                  EmbedCreateSpec.builder()
-                      .title("Smol Floor - Treasure Marketplace\nMAGIC: $" + currentPrice)
-                      .author(
-                          "SmolBot",
-                          null,
-                          "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
-                      .description(output)
-                      .addField(
-                          "Note",
-                          "Choose your own floor; 2x VROOM is default for OG minters, but new Smols don't require 2 VROOMs! Added here by a smol lot of requests",
-                          true)
-                      .build();
+    EmbedCreateSpec floorEmbed =
+        EmbedCreateSpec.builder()
+            .title("Smol Floor - Treasure Marketplace\nMAGIC: $" + currentPrice)
+            .author(
+                "SmolBot",
+                null,
+                "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
+            .description(output)
+            .addField(
+                "Note",
+                "Choose your own floor; 2x VROOM is default for OG minters, but new Smols don't require 2 VROOMs! Added here by a smol lot of requests",
+                true)
+            .build();
 
-              final var floorMagicEmbed =
-                  EmbedCreateSpec.builder().image("attachment://floor.png").build();
+    final var floorMagicEmbed = EmbedCreateSpec.builder().image("attachment://floor.png").build();
 
-              final var floorUsdEmbed =
-                  EmbedCreateSpec.builder().image("attachment://floor_usd.png").build();
+    final var floorUsdEmbed = EmbedCreateSpec.builder().image("attachment://floor_usd.png").build();
 
-              return c.createMessage(
-                  MessageCreateSpec.builder()
-                      .addFile(
-                          "floor.png",
-                          new ByteArrayInputStream(floorService.getCurrentFloorImageBytes()))
-                      .addFile(
-                          "floor_usd.png",
-                          new ByteArrayInputStream(floorService.getCurrentFloorUsdImageBytes()))
-                      .addEmbed(floorMagicEmbed)
-                      .addEmbed(floorUsdEmbed)
-                      .addEmbed(floorEmbed)
-                      .build());
-            });
+    return new FloorResponse(floorEmbed, floorMagicEmbed, floorUsdEmbed);
   }
 }
