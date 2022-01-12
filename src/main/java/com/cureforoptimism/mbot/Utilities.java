@@ -1,24 +1,7 @@
 package com.cureforoptimism.mbot;
 
-import static com.cureforoptimism.mbot.Constants.SMOL_BODY_HIGHEST_ID;
-import static com.cureforoptimism.mbot.Constants.SMOL_BODY_TOTAL_SUPPLY;
-import static com.cureforoptimism.mbot.Constants.SMOL_HIGHEST_ID;
-import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
-import static com.cureforoptimism.mbot.Constants.SMOL_VROOM_TOTAL_SUPPLY;
-
-import com.cureforoptimism.mbot.domain.RarityRank;
-import com.cureforoptimism.mbot.domain.SmolBodyRarityRank;
-import com.cureforoptimism.mbot.domain.SmolBodyTrait;
-import com.cureforoptimism.mbot.domain.SmolType;
-import com.cureforoptimism.mbot.domain.Trait;
-import com.cureforoptimism.mbot.domain.VroomRarityRank;
-import com.cureforoptimism.mbot.domain.VroomTrait;
-import com.cureforoptimism.mbot.repository.RarityRankRepository;
-import com.cureforoptimism.mbot.repository.SmolBodyRarityRankRepository;
-import com.cureforoptimism.mbot.repository.SmolBodyTraitsRepository;
-import com.cureforoptimism.mbot.repository.TraitsRepository;
-import com.cureforoptimism.mbot.repository.VroomRarityRankRepository;
-import com.cureforoptimism.mbot.repository.VroomTraitsRepository;
+import com.cureforoptimism.mbot.domain.*;
+import com.cureforoptimism.mbot.repository.*;
 import com.cureforoptimism.mbot.service.TreasureService;
 import com.inamik.text.tables.GridTable;
 import com.inamik.text.tables.SimpleTable;
@@ -29,13 +12,21 @@ import com.smolbrains.SmolBrainsContract;
 import com.smolbrains.SmolBrainsRocketContract;
 import com.smolbrains.SmolBrainsVroomContract;
 import discord4j.core.spec.EmbedCreateSpec;
-import java.awt.image.BufferedImage;
+import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.math.BigInteger;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -43,20 +34,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import javax.imageio.ImageIO;
-import lombok.extern.slf4j.Slf4j;
-import org.json.JSONObject;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import java.util.*;
+
+import static com.cureforoptimism.mbot.Constants.*;
 
 @Component
 @Slf4j
@@ -364,7 +345,8 @@ public class Utilities {
           case SMOL_BODY -> "smol_body";
         };
 
-    final Path path = Paths.get("img_cache", pathPiece, id + ".png");
+    final int brainSize = getSmolBrainSize(id);
+    final Path path = Paths.get("img_cache", pathPiece, id + "_" + brainSize + ".png");
     if (path.toFile().exists()) {
       // Read
       try {
@@ -632,7 +614,7 @@ public class Utilities {
   }
 
   @Transactional
-  private void generateRanks() {
+  void generateRanks() {
     Map<String, Map<String, Double>> rarityCache = new HashMap<>();
     Map<Long, Double> smolScores = new HashMap<>();
 
@@ -709,6 +691,37 @@ public class Utilities {
     }
 
     log.info("Finished generating ranks");
+  }
+
+  public BufferedImage getTransparentImage(String tokenId) throws URISyntaxException, IOException {
+    final var smolUri = new URI(getSmolImage(tokenId, SmolType.SMOL, false).orElse(""));
+
+    var imageSmol = ImageIO.read(smolUri.toURL());
+
+    final var transparentColor = imageSmol.getRGB(0, 0);
+    ImageFilter imageFilter =
+        new RGBImageFilter() {
+          @Override
+          public int filterRGB(int x, int y, int rgb) {
+            if ((rgb | 0xFF000000) == transparentColor) {
+              return 0x00FFFFFF & rgb;
+            }
+
+            return rgb;
+          }
+        };
+
+    ImageProducer imageProducer = new FilteredImageSource(imageSmol.getSource(), imageFilter);
+    Image imgSmol = Toolkit.getDefaultToolkit().createImage(imageProducer);
+
+    BufferedImage transparentImg =
+        new BufferedImage(
+            imgSmol.getWidth(null), imgSmol.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+    Graphics2D g2 = transparentImg.createGraphics();
+    g2.drawImage(imgSmol, 0, 0, null);
+    g2.dispose();
+
+    return transparentImg;
   }
 
   public static String simpleTableToString(SimpleTable simpleTable) {

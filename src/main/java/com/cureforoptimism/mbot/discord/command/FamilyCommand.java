@@ -13,15 +13,16 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
-import java.awt.AlphaComposite;
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.Toolkit;
-import java.awt.image.BufferedImage;
-import java.awt.image.FilteredImageSource;
-import java.awt.image.ImageFilter;
-import java.awt.image.ImageProducer;
-import java.awt.image.RGBImageFilter;
+import lombok.extern.slf4j.Slf4j;
+import org.imgscalr.Scalr;
+import org.imgscalr.Scalr.Mode;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
+
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
@@ -29,13 +30,6 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import javax.imageio.ImageIO;
-import lombok.extern.slf4j.Slf4j;
-import org.imgscalr.Scalr;
-import org.imgscalr.Scalr.Mode;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 
 @Component
 @Slf4j
@@ -47,6 +41,8 @@ public class FamilyCommand implements MbotCommand {
   private final RarityRankRepository rarityRankRepository;
   private final VroomRarityRankRepository vroomRarityRankRepository;
   private BufferedImage imgGalaxy;
+  private BufferedImage imgMoonSurface;
+  private BufferedImage imgBackground;
 
   public FamilyCommand(
       Utilities utilities,
@@ -64,6 +60,9 @@ public class FamilyCommand implements MbotCommand {
 
     try {
       this.imgGalaxy = ImageIO.read(new ClassPathResource("galaxy.png").getInputStream());
+      this.imgBackground = ImageIO.read(new ClassPathResource("lasers.png").getInputStream());
+      this.imgMoonSurface =
+          ImageIO.read(new ClassPathResource("moon_surface_bone.png").getInputStream());
     } catch (Exception ex) {
       log.error(ex.getMessage());
       System.exit(-1);
@@ -89,10 +88,21 @@ public class FamilyCommand implements MbotCommand {
   public Mono<Message> handle(MessageCreateEvent event) {
     String msg = event.getMessage().getContent();
     String[] parts = msg.split(" ");
+    BufferedImage bgImage = this.imgMoonSurface;
 
-    if (parts.length == 2) {
+    if (parts.length >= 2 && parts.length < 4) {
+      if (parts.length == 3) {
+        String part = parts[2].toLowerCase();
+
+        bgImage =
+            switch (part) {
+              case "laser" -> this.imgBackground;
+              case "galaxy" -> this.imgGalaxy;
+              default -> this.imgMoonSurface;
+            };
+      }
+
       try {
-
         final var address = smolBrainsContract.ownerOf(new BigInteger(parts[1])).send();
 
         // Get all smols
@@ -203,7 +213,7 @@ public class FamilyCommand implements MbotCommand {
         Graphics2D graphics = output.createGraphics();
 
         graphics.setComposite(AlphaComposite.SrcOver);
-        graphics.drawImage(Scalr.resize(imgGalaxy, Mode.FIT_EXACT, maxSmolWidths), 0, 0, null);
+        graphics.drawImage(Scalr.resize(bgImage, Mode.FIT_EXACT, maxSmolWidths), 0, 0, null);
 
         int xOffset = smolImages.size() * 130;
         for (BufferedImage smolImage : smolImagesTransparent) {
@@ -217,20 +227,22 @@ public class FamilyCommand implements MbotCommand {
 
         graphics.dispose();
 
-        output = new BufferedImage(vroomIds.size() * 350, 350, BufferedImage.TYPE_INT_ARGB);
-        graphics = output.createGraphics();
-
-        xOffset = 0;
-        for (BufferedImage vroomImage : vroomImages) {
-          graphics.setComposite(AlphaComposite.SrcOver);
-          graphics.drawImage(vroomImage, xOffset, 0, null);
-          xOffset += vroomImage.getWidth();
-        }
-
         ByteArrayOutputStream vroomOutputStream = new ByteArrayOutputStream();
-        ImageIO.write(output, "png", vroomOutputStream);
+        if (!vroomIds.isEmpty()) {
+          output = new BufferedImage(vroomIds.size() * 350, 350, BufferedImage.TYPE_INT_ARGB);
+          graphics = output.createGraphics();
 
-        graphics.dispose();
+          xOffset = 0;
+          for (BufferedImage vroomImage : vroomImages) {
+            graphics.setComposite(AlphaComposite.SrcOver);
+            graphics.drawImage(vroomImage, xOffset, 0, null);
+            xOffset += vroomImage.getWidth();
+          }
+
+          ImageIO.write(output, "png", vroomOutputStream);
+
+          graphics.dispose();
+        }
 
         return event
             .getMessage()

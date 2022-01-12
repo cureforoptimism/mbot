@@ -8,15 +8,22 @@ import com.cureforoptimism.mbot.domain.SmolType;
 import com.cureforoptimism.mbot.repository.RarityRankRepository;
 import com.cureforoptimism.mbot.repository.SmolSalesRepository;
 import com.cureforoptimism.mbot.service.CoinGeckoService;
+import discord4j.core.spec.MessageCreateSpec;
 import io.github.redouane59.twitter.TwitterClient;
+import io.github.redouane59.twitter.dto.endpoints.AdditionalParameters;
 import io.github.redouane59.twitter.dto.tweet.MediaCategory;
 import io.github.redouane59.twitter.dto.tweet.TweetParameters;
 import io.github.redouane59.twitter.dto.tweet.TweetParameters.Media;
+import io.github.redouane59.twitter.dto.tweet.TweetV2.TweetData;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +42,8 @@ public class TwitterBot {
   private final Utilities utilities;
   private final RarityRankRepository rarityRankRepository;
   private Date lastTweetedBlockTimestamp = null;
+  private LocalDateTime lastPostedTweetTime = null;
+  private final List<Long> notifyChannelList;
 
   public TwitterBot(
       TwitterClient twitterClient,
@@ -49,6 +58,55 @@ public class TwitterBot {
     this.coinGeckoService = coinGeckoService;
     this.utilities = utilities;
     this.rarityRankRepository = rarityRankRepository;
+
+    // dev channel: 832825371941535817L
+    // prod channel: 926303694801223751L
+    // smolverse alpha #bot-commands: 916862412777488384
+    // smolverse alpha #tweets: 916839134411243580L
+    // smol brains #bot-spam: 917430194049007616L
+    this.notifyChannelList =
+        List.of(926303694801223751L, 917430194049007616L, 916862412777488384L, 916839134411243580L);
+  }
+
+  @Scheduled(fixedDelay = 15000)
+  public synchronized void postNewTweets() {
+    if (lastTweetedBlockTimestamp == null) {
+      lastPostedTweetTime = LocalDateTime.now(ZoneOffset.UTC).minus(11, ChronoUnit.MINUTES);
+    }
+
+    final var tweets =
+        twitterClient.searchTweets(
+            "from:SmolBrainsNFT",
+            AdditionalParameters.builder().startTime(lastPostedTweetTime).build());
+
+    final var sortedByCreate =
+        tweets.getData().stream()
+            .sorted(Comparator.comparing(TweetData::getCreatedAt, Comparator.naturalOrder()))
+            .toList();
+
+    for (TweetData tweet : sortedByCreate) {
+      // Skip replies; we only want top level tweets
+      if (tweet.getReferencedTweets() != null && !tweet.getReferencedTweets().isEmpty()) {
+        continue;
+      }
+
+      if (tweet.getCreatedAt().isAfter(lastPostedTweetTime)) {
+        lastPostedTweetTime = tweet.getCreatedAt();
+      } else {
+        continue;
+      }
+
+      log.info(tweet.getCreatedAt().toString());
+
+      log.info("New tweet! Posting to Discord: " + tweet.getId());
+      discordBot.postMessage(
+          MessageCreateSpec.builder()
+              .content(
+                  "New Tweet from **SmolBrainsNFT**: https://twitter.com/SmolBrainsNFT/status/"
+                      + tweet.getId())
+              .build(),
+          notifyChannelList);
+    }
   }
 
   @Scheduled(fixedDelay = 60000, initialDelay = 1000)

@@ -1,34 +1,26 @@
 package com.cureforoptimism.mbot.discord.command;
 
 import com.cureforoptimism.mbot.Utilities;
-import com.cureforoptimism.mbot.domain.SmolType;
 import com.cureforoptimism.mbot.domain.Trait;
 import com.cureforoptimism.mbot.repository.TraitsRepository;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
-import java.awt.AlphaComposite;
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.Toolkit;
-import java.awt.image.BufferedImage;
-import java.awt.image.FilteredImageSource;
-import java.awt.image.ImageFilter;
-import java.awt.image.ImageProducer;
-import java.awt.image.RGBImageFilter;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.List;
-import javax.imageio.ImageIO;
 import org.imgscalr.Scalr;
 import org.imgscalr.Scalr.Mode;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.List;
 
 @Component
 public class SpaceCommand implements MbotCommand {
@@ -89,10 +81,6 @@ public class SpaceCommand implements MbotCommand {
       }
 
       try {
-        final var smolUri =
-            new URI(utilities.getSmolImage(tokenId, SmolType.SMOL, false).orElse(""));
-        var imageSmol = ImageIO.read(smolUri.toURL());
-
         boolean usePipeFix = false;
         boolean useGumFix = false;
         boolean useArmorFix = false;
@@ -112,30 +100,7 @@ public class SpaceCommand implements MbotCommand {
           }
         }
 
-        final var transparentColor = imageSmol.getRGB(0, 0);
-        ImageFilter imageFilter =
-            new RGBImageFilter() {
-              @Override
-              public int filterRGB(int x, int y, int rgb) {
-                if ((rgb | 0xFF000000) == transparentColor) {
-                  return 0x00FFFFFF & rgb;
-                }
-
-                return rgb;
-              }
-            };
-
-        ImageProducer imageProducer = new FilteredImageSource(imageSmol.getSource(), imageFilter);
-        Image imgSmol = Toolkit.getDefaultToolkit().createImage(imageProducer);
-
-        BufferedImage transparentImg =
-            new BufferedImage(
-                imgSmol.getWidth(null), imgSmol.getHeight(null), BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = transparentImg.createGraphics();
-        g2.drawImage(imgSmol, 0, 0, null);
-        g2.dispose();
-
-        imageSmol = transparentImg;
+        final var imageSmol = utilities.getTransparentImage(tokenId);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         BufferedImage output =
@@ -174,7 +139,7 @@ public class SpaceCommand implements MbotCommand {
                               "SmolBot",
                               null,
                               "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
-                          .image("attachment://" + tokenId + "space.")
+                          .image("attachment://" + tokenId + "space.png")
                           .addField(
                               "Notes",
                               "Ready for lift off! From `thegall#5404` x `Cure For Optimism`",

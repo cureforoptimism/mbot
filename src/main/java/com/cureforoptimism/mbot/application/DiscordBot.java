@@ -3,17 +3,22 @@ package com.cureforoptimism.mbot.application;
 import com.cureforoptimism.mbot.discord.events.RefreshEvent;
 import com.cureforoptimism.mbot.discord.listener.MbotCommandListener;
 import com.cureforoptimism.mbot.service.TokenService;
+import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.presence.ClientActivity;
 import discord4j.core.object.presence.ClientPresence;
+import discord4j.core.spec.MessageCreateSpec;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 @Slf4j
@@ -93,5 +98,22 @@ public class DiscordBot implements ApplicationRunner {
     }
 
     log.info("Discord client logged in");
+  }
+
+  public void postMessage(MessageCreateSpec messageCreateSpec, List<Long> discordChannelIds) {
+    for (Long discordChannelId : discordChannelIds) {
+      try {
+        final var messages =
+            client
+                .getChannelById(Snowflake.of(discordChannelId))
+                .ofType(MessageChannel.class)
+                .flatMap(
+                    c -> c.createMessage(messageCreateSpec));
+
+        messages.block();
+      } catch (Exception ex) {
+        log.warn("Unable to post to channel: " + discordChannelId);
+      }
+    }
   }
 }
