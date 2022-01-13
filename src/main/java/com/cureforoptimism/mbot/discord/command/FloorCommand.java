@@ -29,7 +29,7 @@ public class FloorCommand implements MbotCommand {
   final DiscordBot discordBot;
   final FloorService floorService;
 
-  private class FloorResponse {
+  private static class FloorResponse {
     EmbedCreateSpec floorEmbed;
     EmbedCreateSpec floorMagicEmbed;
     EmbedCreateSpec floorUsdEmbed;

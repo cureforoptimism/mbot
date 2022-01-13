@@ -13,7 +13,16 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.core.spec.InteractionFollowupCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
+import lombok.extern.slf4j.Slf4j;
+import org.imgscalr.Scalr;
+import org.imgscalr.Scalr.Mode;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
+
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.*;
 import java.io.ByteArrayInputStream;
@@ -23,13 +32,6 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import javax.imageio.ImageIO;
-import lombok.extern.slf4j.Slf4j;
-import org.imgscalr.Scalr;
-import org.imgscalr.Scalr.Mode;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 
 @Component
 @Slf4j
@@ -43,6 +45,13 @@ public class FamilyCommand implements MbotCommand {
   private BufferedImage imgGalaxy;
   private BufferedImage imgMoonSurface;
   private BufferedImage imgBackground;
+
+  private static class FamilyResponse {
+    EmbedCreateSpec familyPhoto;
+    byte[] familyPhotoBytes;
+    EmbedCreateSpec vrooms;
+    byte[] vroomPhotoBytes;
+  }
 
   public FamilyCommand(
       Utilities utilities,
@@ -88,218 +97,249 @@ public class FamilyCommand implements MbotCommand {
   public Mono<Message> handle(MessageCreateEvent event) {
     String msg = event.getMessage().getContent();
     String[] parts = msg.split(" ");
-    BufferedImage bgImage = this.imgMoonSurface;
 
-    if (parts.length >= 2 && parts.length < 4) {
-      if (parts.length == 3) {
-        String part = parts[2].toLowerCase();
-
-        bgImage =
-            switch (part) {
-              case "laser" -> this.imgBackground;
-              case "galaxy" -> this.imgGalaxy;
-              default -> this.imgMoonSurface;
-            };
-      }
-
-      try {
-        final var address = smolBrainsContract.ownerOf(new BigInteger(parts[1])).send();
-
-        // Get all smols
-        List<Integer> smolIds = new ArrayList<>();
-        final var smolsBalance = smolBrainsContract.balanceOf(address).send();
-        for (int x = 0; x < smolsBalance.intValue(); x++) {
-          smolIds.add(
-              smolBrainsContract
-                  .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
-                  .send()
-                  .intValue());
-        }
-
-        // TODO: Verify that we can even get here
-        if (smolIds.isEmpty()) {
-          return Mono.empty();
-        }
-
-        // Get all vrooms
-        List<Integer> vroomIds = new ArrayList<>();
-        final var vroomsBalance = smolBrainsVroomContract.balanceOf(address).send();
-        for (int x = 0; x < vroomsBalance.intValue(); x++) {
-          vroomIds.add(
-              smolBrainsVroomContract
-                  .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
-                  .send()
-                  .intValue());
-        }
-
-        StringBuilder description = new StringBuilder();
-        StringBuilder vroomsDescription = new StringBuilder();
-
-        description.append("The happy family!\n\n").append("SMOLS\n");
-        BigDecimal totalIq = BigDecimal.ZERO;
-        for (Integer smolId : smolIds) {
-          RarityRank rarityRank = rarityRankRepository.findBySmolId(smolId.longValue());
-
-          BigDecimal iq = treasureService.getIq(smolId);
-          totalIq = totalIq.add(iq);
-          description
-              .append("#")
-              .append(smolId)
-              .append(" (Rank ")
-              .append(rarityRank.getRank())
-              .append(") - ")
-              .append(iq)
-              .append(" IQ\n");
-        }
-
-        description.append("\nTotal IQ in family: ").append(totalIq);
-
-        if (!vroomIds.isEmpty()) {
-          vroomsDescription.append("\n\nVROOMS\n");
-          for (Integer vroomId : vroomIds) {
-            VroomRarityRank rarityRank =
-                vroomRarityRankRepository.findBySmolId(vroomId.longValue());
-            vroomsDescription
-                .append("#")
-                .append(vroomId)
-                .append(" (Rank ")
-                .append(rarityRank.getRank())
-                .append(")\n");
-          }
-        }
-
-        // Let's see how horrible of an idea it would be to build a composite image
-        final List<BufferedImage> smolImages = new ArrayList<>();
-        smolIds.parallelStream()
-            .forEach(
-                id -> {
-                  var imgOpt = utilities.getSmolBufferedImage(id.toString(), SmolType.SMOL);
-                  imgOpt.ifPresent(smolImages::add);
-                });
-
-        final List<BufferedImage> vroomImages = new ArrayList<>();
-        vroomIds.parallelStream()
-            .forEach(
-                id -> {
-                  var imgOpt = utilities.getSmolBufferedImage(id.toString(), SmolType.VROOM);
-                  imgOpt.ifPresent(vroomImages::add);
-                });
-
-        // Let's make the backgrounds of all the smols transparent (we should replace with one of
-        // the background colors later)
-        List<BufferedImage> smolImagesTransparent = new ArrayList<>();
-        for (BufferedImage smolImage : smolImages) {
-          final var transparentColor = smolImage.getRGB(0, 0);
-          ImageFilter imageFilter =
-              new RGBImageFilter() {
-                @Override
-                public int filterRGB(int x, int y, int rgb) {
-                  if ((rgb | 0xFF000000) == transparentColor) {
-                    return 0x00FFFFFF & rgb;
-                  }
-
-                  return rgb;
-                }
-              };
-
-          ImageProducer imageProducer = new FilteredImageSource(smolImage.getSource(), imageFilter);
-          smolImagesTransparent.add(
-              imageToBufferedImage(Toolkit.getDefaultToolkit().createImage(imageProducer)));
-        }
-
-        final var maxSmolWidths = (smolImagesTransparent.size() * 130) + 130;
-
-        BufferedImage output = new BufferedImage(maxSmolWidths, 350, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D graphics = output.createGraphics();
-
-        graphics.setComposite(AlphaComposite.SrcOver);
-        graphics.drawImage(Scalr.resize(bgImage, Mode.FIT_EXACT, maxSmolWidths), 0, 0, null);
-
-        int xOffset = smolImages.size() * 130;
-        for (BufferedImage smolImage : smolImagesTransparent) {
-          xOffset -= 130;
-          graphics.setComposite(AlphaComposite.SrcOver);
-          graphics.drawImage(smolImage, xOffset - 40, 0, null);
-        }
-
-        ByteArrayOutputStream smolOutputStream = new ByteArrayOutputStream();
-        ImageIO.write(output, "png", smolOutputStream);
-
-        graphics.dispose();
-
-        ByteArrayOutputStream vroomOutputStream = new ByteArrayOutputStream();
-        if (!vroomIds.isEmpty()) {
-          output = new BufferedImage(vroomIds.size() * 350, 350, BufferedImage.TYPE_INT_ARGB);
-          graphics = output.createGraphics();
-
-          xOffset = 0;
-          for (BufferedImage vroomImage : vroomImages) {
-            graphics.setComposite(AlphaComposite.SrcOver);
-            graphics.drawImage(vroomImage, xOffset, 0, null);
-            xOffset += vroomImage.getWidth();
-          }
-
-          ImageIO.write(output, "png", vroomOutputStream);
-
-          graphics.dispose();
-        }
-
-        return event
-            .getMessage()
-            .getChannel()
-            .flatMap(
-                c -> {
-                  EmbedCreateSpec embed =
-                      EmbedCreateSpec.builder()
-                          .title("Smol Family")
-                          .description(description.toString())
-                          .image("attachment://smol_damned_family.png")
-                          .build();
-
-                  final var response =
-                      MessageCreateSpec.builder()
-                          .addFile(
-                              "smol_damned_family.png",
-                              new ByteArrayInputStream(smolOutputStream.toByteArray()))
-                          .addEmbed(embed);
-
-                  if (!vroomIds.isEmpty()) {
-                    response.addEmbed(
-                        EmbedCreateSpec.builder()
-                            .title("Vrooms")
-                            .description(vroomsDescription.toString())
-                            .image("attachment://family_vrooms.png")
-                            .timestamp(Instant.now())
-                            .build());
-                    response.addFile(
-                        "family_vrooms.png",
-                        new ByteArrayInputStream(vroomOutputStream.toByteArray()));
-                  }
-
-                  return c.createMessage(response.build());
-                });
-      } catch (Exception ex) {
-        // TODO: I should really stop writing code in a hurry and properly handle specific
-        // exceptions
-        log.error("Error retrieving profile", ex);
-        return event
-            .getMessage()
-            .getChannel()
-            .flatMap(
-                c ->
-                    c.createMessage(
-                        "The smart contract shows no record of "
-                            + parts[1]
-                            + " existing, and smol bot has no idea why!"));
-      }
+    String tokenId = parts[1];
+    String background = null;
+    if (parts.length >= 3) {
+      background = parts[2];
     }
 
-    return Mono.empty();
+    final var familyResponse = getFamilyResponse(tokenId, background);
+    if (familyResponse == null) {
+      log.warn("Unable to retrieve family for " + tokenId);
+      return Mono.empty();
+    }
+
+    final var response =
+        MessageCreateSpec.builder()
+            .addFile(
+                "smol_damned_family.png", new ByteArrayInputStream(familyResponse.familyPhotoBytes))
+            .addEmbed(familyResponse.familyPhoto);
+
+    if (familyResponse.vrooms != null) {
+      response.addFile(
+          "family_vrooms.png", new ByteArrayInputStream(familyResponse.vroomPhotoBytes));
+      response.addEmbed(familyResponse.vrooms);
+    }
+
+    return event.getMessage().getChannel().flatMap(c -> c.createMessage(response.build()));
   }
 
   @Override
   public Mono<Void> handle(ChatInputInteractionEvent event) {
-    return null;
+    log.info("/family command received");
+
+    final var tokenIdOption = event.getOption("id").orElse(null);
+    if (tokenIdOption == null || tokenIdOption.getValue().isEmpty()) {
+      return Mono.empty();
+    }
+
+    final var tokenId = Utilities.getOptionString(event, "id").orElse(null);
+    final var background = Utilities.getOptionString(event, "background").orElse(null);
+
+    final var familyResponse = getFamilyResponse(tokenId, background);
+    if (familyResponse == null) {
+      log.warn("Unable to retrieve family for " + tokenId);
+      return Mono.empty();
+    }
+
+    final var response =
+        InteractionFollowupCreateSpec.builder()
+            .addFile(
+                "smol_damned_family.png", new ByteArrayInputStream(familyResponse.familyPhotoBytes))
+            .addEmbed(familyResponse.familyPhoto);
+
+    if (familyResponse.vrooms != null) {
+      response.addFile(
+          "family_vrooms.png", new ByteArrayInputStream(familyResponse.vroomPhotoBytes));
+      response.addEmbed(familyResponse.vrooms);
+    }
+
+    event.deferReply().then(event.createFollowup(response.build())).block();
+
+    return Mono.empty();
+  }
+
+  private FamilyResponse getFamilyResponse(String tokenId, String background) {
+    BufferedImage bgImage = this.imgMoonSurface;
+
+    if (background != null) {
+      bgImage =
+          switch (background) {
+            case "lasers" -> this.imgBackground;
+            case "galaxy" -> this.imgGalaxy;
+            default -> this.imgMoonSurface;
+          };
+    }
+
+    try {
+      final var address = smolBrainsContract.ownerOf(new BigInteger(tokenId)).send();
+
+      // Get all smols
+      List<Integer> smolIds = new ArrayList<>();
+      final var smolsBalance = smolBrainsContract.balanceOf(address).send();
+      for (int x = 0; x < smolsBalance.intValue(); x++) {
+        smolIds.add(
+            smolBrainsContract
+                .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
+                .send()
+                .intValue());
+      }
+
+      // TODO: Verify that we can even get here
+      if (smolIds.isEmpty()) {
+        return null;
+      }
+
+      // Get all vrooms
+      List<Integer> vroomIds = new ArrayList<>();
+      final var vroomsBalance = smolBrainsVroomContract.balanceOf(address).send();
+      for (int x = 0; x < vroomsBalance.intValue(); x++) {
+        vroomIds.add(
+            smolBrainsVroomContract
+                .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
+                .send()
+                .intValue());
+      }
+
+      StringBuilder description = new StringBuilder();
+      StringBuilder vroomsDescription = new StringBuilder();
+
+      description.append("The happy family!\n\n").append("SMOLS\n");
+      BigDecimal totalIq = BigDecimal.ZERO;
+      for (Integer smolId : smolIds) {
+        RarityRank rarityRank = rarityRankRepository.findBySmolId(smolId.longValue());
+
+        BigDecimal iq = treasureService.getIq(smolId);
+        totalIq = totalIq.add(iq);
+        description
+            .append("#")
+            .append(smolId)
+            .append(" (Rank ")
+            .append(rarityRank.getRank())
+            .append(") - ")
+            .append(iq)
+            .append(" IQ\n");
+      }
+
+      description.append("\nTotal IQ in family: ").append(totalIq);
+
+      if (!vroomIds.isEmpty()) {
+        vroomsDescription.append("\n\nVROOMS\n");
+        for (Integer vroomId : vroomIds) {
+          VroomRarityRank rarityRank = vroomRarityRankRepository.findBySmolId(vroomId.longValue());
+          vroomsDescription
+              .append("#")
+              .append(vroomId)
+              .append(" (Rank ")
+              .append(rarityRank.getRank())
+              .append(")\n");
+        }
+      }
+
+      // Let's see how horrible of an idea it would be to build a composite image
+      final List<BufferedImage> smolImages = new ArrayList<>();
+      smolIds.parallelStream()
+          .forEach(
+              id -> {
+                var imgOpt = utilities.getSmolBufferedImage(id.toString(), SmolType.SMOL);
+                imgOpt.ifPresent(smolImages::add);
+              });
+
+      final List<BufferedImage> vroomImages = new ArrayList<>();
+      vroomIds.parallelStream()
+          .forEach(
+              id -> {
+                var imgOpt = utilities.getSmolBufferedImage(id.toString(), SmolType.VROOM);
+                imgOpt.ifPresent(vroomImages::add);
+              });
+
+      // Let's make the backgrounds of all the smols transparent (we should replace with one of
+      // the background colors later)
+      List<BufferedImage> smolImagesTransparent = new ArrayList<>();
+      for (BufferedImage smolImage : smolImages) {
+        final var transparentColor = smolImage.getRGB(0, 0);
+        ImageFilter imageFilter =
+            new RGBImageFilter() {
+              @Override
+              public int filterRGB(int x, int y, int rgb) {
+                if ((rgb | 0xFF000000) == transparentColor) {
+                  return 0x00FFFFFF & rgb;
+                }
+
+                return rgb;
+              }
+            };
+
+        ImageProducer imageProducer = new FilteredImageSource(smolImage.getSource(), imageFilter);
+        smolImagesTransparent.add(
+            imageToBufferedImage(Toolkit.getDefaultToolkit().createImage(imageProducer)));
+      }
+
+      final var maxSmolWidths = (smolImagesTransparent.size() * 130) + 130;
+
+      BufferedImage output = new BufferedImage(maxSmolWidths, 350, BufferedImage.TYPE_INT_ARGB);
+      Graphics2D graphics = output.createGraphics();
+
+      graphics.setComposite(AlphaComposite.SrcOver);
+      graphics.drawImage(Scalr.resize(bgImage, Mode.FIT_EXACT, maxSmolWidths), 0, 0, null);
+
+      int xOffset = smolImages.size() * 130;
+      for (BufferedImage smolImage : smolImagesTransparent) {
+        xOffset -= 130;
+        graphics.setComposite(AlphaComposite.SrcOver);
+        graphics.drawImage(smolImage, xOffset - 40, 0, null);
+      }
+
+      ByteArrayOutputStream smolOutputStream = new ByteArrayOutputStream();
+      ImageIO.write(output, "png", smolOutputStream);
+
+      graphics.dispose();
+
+      ByteArrayOutputStream vroomOutputStream = new ByteArrayOutputStream();
+      if (!vroomIds.isEmpty()) {
+        output = new BufferedImage(vroomIds.size() * 350, 350, BufferedImage.TYPE_INT_ARGB);
+        graphics = output.createGraphics();
+
+        xOffset = 0;
+        for (BufferedImage vroomImage : vroomImages) {
+          graphics.setComposite(AlphaComposite.SrcOver);
+          graphics.drawImage(vroomImage, xOffset, 0, null);
+          xOffset += vroomImage.getWidth();
+        }
+
+        ImageIO.write(output, "png", vroomOutputStream);
+
+        graphics.dispose();
+      }
+
+      FamilyResponse familyResponse = new FamilyResponse();
+      familyResponse.familyPhotoBytes = smolOutputStream.toByteArray();
+      familyResponse.familyPhoto =
+          EmbedCreateSpec.builder()
+              .title("Smol Family")
+              .description(description.toString())
+              .image("attachment://smol_damned_family.png")
+              .build();
+
+      if (!vroomIds.isEmpty()) {
+        familyResponse.vrooms =
+            EmbedCreateSpec.builder()
+                .title("Vrooms")
+                .description(vroomsDescription.toString())
+                .image("attachment://family_vrooms.png")
+                .timestamp(Instant.now())
+                .build();
+        familyResponse.vroomPhotoBytes = vroomOutputStream.toByteArray();
+      }
+
+      return familyResponse;
+    } catch (Exception ex) {
+      // TODO: I should really stop writing code in a hurry and properly handle specific
+      // exceptions
+      log.error("Error retrieving profile", ex);
+      return null;
+    }
   }
 
   private static BufferedImage imageToBufferedImage(Image image) {
