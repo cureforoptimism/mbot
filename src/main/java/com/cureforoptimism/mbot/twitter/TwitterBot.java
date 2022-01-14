@@ -146,7 +146,7 @@ public class TwitterBot {
         final String usdValue = decimalFormatZeroes.format(usdPrice);
 
         final var imgOpt =
-            utilities.getSmolBufferedImage(smolSale.getTokenId().toString(), SmolType.SMOL);
+            utilities.getSmolBufferedImage(smolSale.getTokenId().toString(), SmolType.SMOL, false);
         if (imgOpt.isEmpty()) {
           return;
         }

@@ -15,14 +15,6 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionFollowupCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
-import lombok.extern.slf4j.Slf4j;
-import org.imgscalr.Scalr;
-import org.imgscalr.Scalr.Mode;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
-
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.*;
 import java.io.ByteArrayInputStream;
@@ -32,6 +24,13 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import javax.imageio.ImageIO;
+import lombok.extern.slf4j.Slf4j;
+import org.imgscalr.Scalr;
+import org.imgscalr.Scalr.Mode;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 @Component
 @Slf4j
@@ -85,7 +84,7 @@ public class FamilyCommand implements MbotCommand {
 
   @Override
   public String getDescription() {
-    return "Display all the things in the Smoliverse in this Smol's family";
+    return "Display all the things in the Smolverse in this Smol's family";
   }
 
   @Override
@@ -100,11 +99,18 @@ public class FamilyCommand implements MbotCommand {
 
     String tokenId = parts[1];
     String background = null;
+    boolean forceSmolBrain = false;
     if (parts.length >= 3) {
-      background = parts[2];
+      for (int x = 2; x < parts.length; x++) {
+        if (parts[x].equalsIgnoreCase("smol")) {
+          forceSmolBrain = true;
+        } else {
+          background = parts[x];
+        }
+      }
     }
 
-    final var familyResponse = getFamilyResponse(tokenId, background);
+    final var familyResponse = getFamilyResponse(tokenId, background, forceSmolBrain);
     if (familyResponse == null) {
       log.warn("Unable to retrieve family for " + tokenId);
       return Mono.empty();
@@ -136,11 +142,25 @@ public class FamilyCommand implements MbotCommand {
 
     final var tokenId = Utilities.getOptionString(event, "id").orElse(null);
     final var background = Utilities.getOptionString(event, "background").orElse(null);
+    final var forceSmolBrain = Utilities.getOptionBoolean(event, "smolbrain").orElse(false);
 
-    final var familyResponse = getFamilyResponse(tokenId, background);
+    event
+        .deferReply()
+        .then(event.createFollowup(getFamilyFollowUp(tokenId, background, forceSmolBrain)))
+        .block();
+
+    return Mono.empty();
+  }
+
+  private InteractionFollowupCreateSpec getFamilyFollowUp(
+      String tokenId, String background, boolean forceSmolBrain) {
+    final var familyResponse = getFamilyResponse(tokenId, background, forceSmolBrain);
     if (familyResponse == null) {
       log.warn("Unable to retrieve family for " + tokenId);
-      return Mono.empty();
+      return InteractionFollowupCreateSpec.builder()
+          .content(
+              "Something went wrong. Try again, and if you think this is an error, whack smol bot with a wrench and tell Cure For Optimism about it")
+          .build();
     }
 
     final var response =
@@ -155,12 +175,11 @@ public class FamilyCommand implements MbotCommand {
       response.addEmbed(familyResponse.vrooms);
     }
 
-    event.deferReply().then(event.createFollowup(response.build())).block();
-
-    return Mono.empty();
+    return response.build();
   }
 
-  private FamilyResponse getFamilyResponse(String tokenId, String background) {
+  private FamilyResponse getFamilyResponse(
+      String tokenId, String background, boolean forceSmolBrain) {
     BufferedImage bgImage = this.imgMoonSurface;
 
     if (background != null) {
@@ -242,7 +261,8 @@ public class FamilyCommand implements MbotCommand {
       smolIds.parallelStream()
           .forEach(
               id -> {
-                var imgOpt = utilities.getSmolBufferedImage(id.toString(), SmolType.SMOL);
+                var imgOpt =
+                    utilities.getSmolBufferedImage(id.toString(), SmolType.SMOL, forceSmolBrain);
                 imgOpt.ifPresent(smolImages::add);
               });
 
@@ -250,7 +270,7 @@ public class FamilyCommand implements MbotCommand {
       vroomIds.parallelStream()
           .forEach(
               id -> {
-                var imgOpt = utilities.getSmolBufferedImage(id.toString(), SmolType.VROOM);
+                var imgOpt = utilities.getSmolBufferedImage(id.toString(), SmolType.VROOM, false);
                 imgOpt.ifPresent(vroomImages::add);
               });
 

@@ -1,7 +1,24 @@
 package com.cureforoptimism.mbot;
 
-import com.cureforoptimism.mbot.domain.*;
-import com.cureforoptimism.mbot.repository.*;
+import static com.cureforoptimism.mbot.Constants.SMOL_BODY_HIGHEST_ID;
+import static com.cureforoptimism.mbot.Constants.SMOL_BODY_TOTAL_SUPPLY;
+import static com.cureforoptimism.mbot.Constants.SMOL_HIGHEST_ID;
+import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
+import static com.cureforoptimism.mbot.Constants.SMOL_VROOM_TOTAL_SUPPLY;
+
+import com.cureforoptimism.mbot.domain.RarityRank;
+import com.cureforoptimism.mbot.domain.SmolBodyRarityRank;
+import com.cureforoptimism.mbot.domain.SmolBodyTrait;
+import com.cureforoptimism.mbot.domain.SmolType;
+import com.cureforoptimism.mbot.domain.Trait;
+import com.cureforoptimism.mbot.domain.VroomRarityRank;
+import com.cureforoptimism.mbot.domain.VroomTrait;
+import com.cureforoptimism.mbot.repository.RarityRankRepository;
+import com.cureforoptimism.mbot.repository.SmolBodyRarityRankRepository;
+import com.cureforoptimism.mbot.repository.SmolBodyTraitsRepository;
+import com.cureforoptimism.mbot.repository.TraitsRepository;
+import com.cureforoptimism.mbot.repository.VroomRarityRankRepository;
+import com.cureforoptimism.mbot.repository.VroomTraitsRepository;
 import com.cureforoptimism.mbot.service.TreasureService;
 import com.inamik.text.tables.GridTable;
 import com.inamik.text.tables.SimpleTable;
@@ -13,14 +30,14 @@ import com.smolbrains.SmolBrainsRocketContract;
 import com.smolbrains.SmolBrainsVroomContract;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.spec.EmbedCreateSpec;
-import lombok.extern.slf4j.Slf4j;
-import org.json.JSONObject;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.image.*;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Toolkit;
+import java.awt.image.BufferedImage;
+import java.awt.image.FilteredImageSource;
+import java.awt.image.ImageFilter;
+import java.awt.image.ImageProducer;
+import java.awt.image.RGBImageFilter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -35,10 +52,20 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.*;
-
-import static com.cureforoptimism.mbot.Constants.*;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import javax.imageio.ImageIO;
+import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @Slf4j
@@ -338,7 +365,8 @@ public class Utilities {
     return Optional.empty();
   }
 
-  public Optional<BufferedImage> getSmolBufferedImage(String id, SmolType smolType) {
+  public Optional<BufferedImage> getSmolBufferedImage(
+      String id, SmolType smolType, boolean forceSmolBrain) {
     final var pathPiece =
         switch (smolType) {
           case SMOL -> "smols";
@@ -346,7 +374,7 @@ public class Utilities {
           case SMOL_BODY -> "smol_body";
         };
 
-    final int brainSize = getSmolBrainSize(id);
+    final int brainSize = forceSmolBrain ? 0 : getSmolBrainSize(id);
     final Path path = Paths.get("img_cache", pathPiece, id + "_" + brainSize + ".png");
     if (path.toFile().exists()) {
       // Read
@@ -359,7 +387,7 @@ public class Utilities {
       }
     } else {
       // Fetch and write
-      final var imgOpt = getSmolImage(id, smolType, false);
+      final var imgOpt = getSmolImage(id, smolType, forceSmolBrain);
       if (imgOpt.isPresent()) {
         try {
           HttpClient httpClient = HttpClient.newHttpClient();
@@ -745,5 +773,14 @@ public class Utilities {
     }
 
     return Optional.of(option.get().getValue().get().getRaw());
+  }
+
+  public static Optional<Boolean> getOptionBoolean(ChatInputInteractionEvent event, String key) {
+    final var option = event.getOption(key);
+    if (option.isEmpty() || option.get().getValue().isEmpty()) {
+      return Optional.empty();
+    }
+
+    return Optional.of(option.get().getValue().get().asBoolean());
   }
 }
