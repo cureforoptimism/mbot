@@ -1,0 +1,12 @@
+{
+  "name": "vroom",
+  "description": "Shows a vroom and details",
+  "options": [
+    {
+      "name": "id",
+      "description": "Vroom ID",
+      "type": 4,
+      "required": true
+    }
+  ]
+}

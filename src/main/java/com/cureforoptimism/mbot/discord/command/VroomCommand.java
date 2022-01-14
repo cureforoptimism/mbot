@@ -52,7 +52,7 @@ public class VroomCommand implements MbotCommand {
 
   @Override
   public Mono<Void> handle(ChatInputInteractionEvent event) {
-    final var tokenId = Utilities.getOptionString(event,"id");
+    final var tokenId = Utilities.getOptionString(event, "id");
 
     event.reply().withEmbeds(utilities.getCarEmbed(tokenId.orElse("")).orElse(null)).block();
 

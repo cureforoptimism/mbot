@@ -144,10 +144,8 @@ public class FamilyCommand implements MbotCommand {
     final var background = Utilities.getOptionString(event, "background").orElse(null);
     final var forceSmolBrain = Utilities.getOptionBoolean(event, "smolbrain").orElse(false);
 
-    event
-        .deferReply()
-        .then(event.createFollowup(getFamilyFollowUp(tokenId, background, forceSmolBrain)))
-        .block();
+    event.deferReply().block();
+    event.createFollowup(getFamilyFollowUp(tokenId, background, forceSmolBrain)).block();
 
     return Mono.empty();
   }

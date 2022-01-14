@@ -775,6 +775,15 @@ public class Utilities {
     return Optional.of(option.get().getValue().get().getRaw());
   }
 
+  public static Optional<Long> getOptionLong(ChatInputInteractionEvent event, String key) {
+    final var option = event.getOption(key);
+    if (option.isEmpty() || option.get().getValue().isEmpty()) {
+      return Optional.empty();
+    }
+
+    return Optional.of(option.get().getValue().get().asLong());
+  }
+
   public static Optional<Boolean> getOptionBoolean(ChatInputInteractionEvent event, String key) {
     final var option = event.getOption(key);
     if (option.isEmpty() || option.get().getValue().isEmpty()) {
