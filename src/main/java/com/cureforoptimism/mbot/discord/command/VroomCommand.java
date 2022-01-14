@@ -24,7 +24,7 @@ public class VroomCommand implements MbotCommand {
 
   @Override
   public String getDescription() {
-    return "shows a vroom and details (WIP)";
+    return "shows a vroom and details";
   }
 
   @Override
@@ -52,6 +52,10 @@ public class VroomCommand implements MbotCommand {
 
   @Override
   public Mono<Void> handle(ChatInputInteractionEvent event) {
+    final var tokenId = Utilities.getOptionString(event,"id");
+
+    event.reply().withEmbeds(utilities.getCarEmbed(tokenId.orElse("")).orElse(null)).block();
+
     return null;
   }
 }
