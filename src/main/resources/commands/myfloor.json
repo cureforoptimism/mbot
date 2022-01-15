@@ -1,0 +1,91 @@
+{
+  "name": "myfloor",
+  "description": "Get or set your own personal floor",
+  "options": [
+    {
+      "name": "get",
+      "description": "Show your personal floor",
+      "type": 1
+    },
+    {
+      "name": "add",
+      "description": "Add something to your personal floor",
+      "type": 1,
+      "options": [
+        {
+          "name": "id",
+          "description": "id of the thing to add",
+          "type": 4,
+          "required": true
+        },
+        {
+          "name": "type",
+          "description": "Whatchu talking about, Willis?",
+          "type": 3,
+          "choices": [
+            {
+              "name": "smol",
+              "value": "smol"
+            },
+            {
+              "name": "swol",
+              "value": "swol"
+            },
+            {
+              "name": "vroom",
+              "value": "vroom"
+            },
+            {
+              "name": "land",
+              "value": "land"
+            },
+            {
+              "name": "family",
+              "value": "family"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "remove",
+      "description": "Remove something from your personal floor",
+      "type": 1,
+      "options": [
+        {
+          "name": "id",
+          "description": "id of the thing to remove",
+          "type": 4,
+          "required": true
+        },
+        {
+          "name": "type",
+          "description": "Whatchu talking about, Willis?",
+          "type": 3,
+          "choices": [
+            {
+              "name": "smol",
+              "value": "smol"
+            },
+            {
+              "name": "swol",
+              "value": "swol"
+            },
+            {
+              "name": "vroom",
+              "value": "vroom"
+            },
+            {
+              "name": "land",
+              "value": "land"
+            },
+            {
+              "name": "family",
+              "value": "family"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

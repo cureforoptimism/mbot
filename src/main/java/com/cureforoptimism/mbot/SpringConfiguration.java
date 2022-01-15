@@ -7,6 +7,7 @@ import com.smolbrains.SmolBodiesContract;
 import com.smolbrains.SmolBrainsContract;
 import com.smolbrains.SmolBrainsRocketContract;
 import com.smolbrains.SmolBrainsVroomContract;
+import com.smolbrains.SmolLandContract;
 import io.github.redouane59.twitter.TwitterClient;
 import io.github.redouane59.twitter.signature.TwitterCredentials;
 import java.security.InvalidAlgorithmParameterException;
@@ -111,6 +112,26 @@ public class SpringConfiguration {
       Credentials dummyCredentials = Credentials.create(Keys.createEcKeyPair());
       return SmolBrainsContract.load(
           "0x6325439389e0797ab35752b4f43a14c004f22a9c",
+          web3j(),
+          dummyCredentials,
+          contractGasProvider);
+
+    } catch (InvalidAlgorithmParameterException
+        | NoSuchAlgorithmException
+        | NoSuchProviderException ex) {
+      log.error("unable to create dummy credentials", ex);
+      return null;
+    }
+  }
+
+  @Bean
+  public SmolLandContract smolLandContract() {
+    ContractGasProvider contractGasProvider = new DefaultGasProvider();
+
+    try {
+      Credentials dummyCredentials = Credentials.create(Keys.createEcKeyPair());
+      return SmolLandContract.load(
+          "0xd666d1cc3102cd03e07794a61e5f4333b4239f53",
           web3j(),
           dummyCredentials,
           contractGasProvider);

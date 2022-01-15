@@ -29,6 +29,7 @@ import com.smolbrains.SmolBrainsContract;
 import com.smolbrains.SmolBrainsRocketContract;
 import com.smolbrains.SmolBrainsVroomContract;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.spec.EmbedCreateSpec;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -372,6 +373,7 @@ public class Utilities {
           case SMOL -> "smols";
           case VROOM -> "vrooms";
           case SMOL_BODY -> "smol_body";
+          default -> "smols";
         };
 
     final int brainSize = forceSmolBrain ? 0 : getSmolBrainSize(id);
@@ -464,6 +466,7 @@ public class Utilities {
                 .uri(new URI(this.smolBodyBaseUri + id + "/0"))
                 .GET()
                 .build();
+            default -> null;
           };
 
       if (request == null) {
@@ -786,6 +789,36 @@ public class Utilities {
 
   public static Optional<Boolean> getOptionBoolean(ChatInputInteractionEvent event, String key) {
     final var option = event.getOption(key);
+    if (option.isEmpty() || option.get().getValue().isEmpty()) {
+      return Optional.empty();
+    }
+
+    return Optional.of(option.get().getValue().get().asBoolean());
+  }
+
+  public static Optional<String> getOptionString(
+      ApplicationCommandInteractionOption options, String key) {
+    final var option = options.getOption(key);
+    if (option.isEmpty() || option.get().getValue().isEmpty()) {
+      return Optional.empty();
+    }
+
+    return Optional.of(option.get().getValue().get().getRaw());
+  }
+
+  public static Optional<Long> getOptionLong(
+      ApplicationCommandInteractionOption options, String key) {
+    final var option = options.getOption(key);
+    if (option.isEmpty() || option.get().getValue().isEmpty()) {
+      return Optional.empty();
+    }
+
+    return Optional.of(option.get().getValue().get().asLong());
+  }
+
+  public static Optional<Boolean> getOptionBoolean(
+      ApplicationCommandInteractionOption options, String key) {
+    final var option = options.getOption(key);
     if (option.isEmpty() || option.get().getValue().isEmpty()) {
       return Optional.empty();
     }

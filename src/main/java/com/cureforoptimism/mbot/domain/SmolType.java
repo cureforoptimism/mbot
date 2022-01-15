@@ -4,4 +4,6 @@ public enum SmolType {
   SMOL,
   VROOM,
   SMOL_BODY,
+  LAND,
+  FAMILY
 }
