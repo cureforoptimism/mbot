@@ -1,0 +1,36 @@
+{
+  "name": "family",
+  "description": "Display all the things in the Smolverse in this Smol's family",
+  "options": [
+    {
+      "name": "id",
+      "description": "Smol ID",
+      "type": 4,
+      "required": true
+    },
+    {
+      "name": "background",
+      "description": "Background for the family photo",
+      "type": 3,
+      "choices": [
+        {
+          "name": "galaxy",
+          "value": "galaxy"
+        },
+        {
+          "name": "lasers",
+          "value": "lasers"
+        },
+        {
+          "name": "moon",
+          "value": "moon"
+        }
+      ]
+    },
+    {
+      "name": "smolbrain",
+      "description": "Force head size of 0 for all smols",
+      "type": 5
+    }
+  ]
+}

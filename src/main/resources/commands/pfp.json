@@ -1,0 +1,39 @@
+{
+  "name": "pfp",
+  "description": "Creates an animated gif for you to use as your profile picture",
+  "options": [
+    {
+      "name": "id",
+      "description": "Smol or Swol ID (uses Smol by default)",
+      "type": 4,
+      "required": true
+    },
+    {
+      "name": "delay",
+      "description": "A value between 1 and 100 for the speed of the gif. Lower means faster!",
+      "type": 4,
+      "min_value": 1,
+      "max_value": 100
+    },
+    {
+      "name": "reverse",
+      "description": "Whether to loop the gif from last frame back to first frame",
+      "type": 5
+    },
+    {
+      "name": "type",
+      "description": "Pick whether this is for a smol or a swol",
+      "type": 3,
+      "choices": [
+        {
+          "name": "smol",
+          "value": "smol"
+        },
+        {
+          "name": "swol",
+          "value": "swol"
+        }
+      ]
+    }
+  ]
+}

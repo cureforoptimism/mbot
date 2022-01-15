@@ -3,6 +3,7 @@ package com.cureforoptimism.mbot.discord.command;
 import com.cureforoptimism.mbot.Utilities;
 import com.cureforoptimism.mbot.domain.SmolType;
 import com.madgag.gif.fmsware.AnimatedGifEncoder;
+import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
@@ -157,5 +158,10 @@ public class SwolNewYearCommand implements MbotCommand {
     }
 
     return Mono.empty();
+  }
+
+  @Override
+  public Mono<Void> handle(ChatInputInteractionEvent event) {
+    return null;
   }
 }

@@ -1,16 +1,19 @@
 package com.cureforoptimism.mbot.discord.command;
 
 import com.cureforoptimism.mbot.Utilities;
+import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 @Component
 @AllArgsConstructor
+@Slf4j
 public class SmolCommand implements MbotCommand {
   private final Utilities utilities;
 
@@ -45,5 +48,35 @@ public class SmolCommand implements MbotCommand {
     }
 
     return Mono.empty();
+  }
+
+  @Override
+  public Mono<Void> handle(ChatInputInteractionEvent event) {
+    log.info("/smol command received");
+
+    try {
+      final var tokenId = event.getOption("id").orElse(null);
+      if (tokenId == null) {
+        return null;
+      }
+
+      if (tokenId.getValue().isEmpty()) {
+        return Mono.empty();
+      }
+
+      final var tokenIdStrOpt = tokenId.getValue().get();
+
+      final var embed = utilities.getSmolEmbed(tokenIdStrOpt.getRaw());
+      if (embed.isEmpty()) {
+        return null;
+      }
+
+      event.reply().withEmbeds(embed.get()).block();
+
+    } catch (Exception ex) {
+      log.error("Error with smol command: " + ex.getMessage());
+    }
+
+    return null;
   }
 }
