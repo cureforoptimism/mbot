@@ -17,7 +17,7 @@ public class TokenService {
   private String file;
 
   public String getDiscordToken() {
-    return getPropertyValue("discord_access_token");
+    return System.getenv("PROD") == null ? getPropertyValue("discord_access_token_dev") : getPropertyValue("discord_access_token");
   }
 
   public String getTwitterApiKey() {
@@ -38,14 +38,6 @@ public class TokenService {
 
   public String getTwitterApiBearerToken() {
     return getPropertyValue("twitter_api_bearer_token");
-  }
-
-  public String getTwitterApiOauthClientId() {
-    return getPropertyValue("twitter_oauth_client_id");
-  }
-
-  public String getTwitterApiOAuthSecret() {
-    return getPropertyValue("twitter_oauth_secret");
   }
 
   private String getPropertyValue(String key) {

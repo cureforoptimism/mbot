@@ -24,7 +24,7 @@ public class AverageIqCommand implements MbotCommand {
 
   @Override
   public String getDescription() {
-    return "Shows the average Smol IQ across the Smoliverse";
+    return "Shows the average Smol IQ across the Smolverse";
   }
 
   @Override
@@ -53,6 +53,16 @@ public class AverageIqCommand implements MbotCommand {
 
   @Override
   public Mono<Void> handle(ChatInputInteractionEvent event) {
-    return null;
+    try {
+    BigInteger averageIqBig = smolBrainsContract.averageIQ().send();
+    MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
+    final var iq = new BigDecimal(averageIqBig, 18, mc);
+
+    event.reply("Average IQ is currently: " + iq).block();
+    } catch (Exception ignored) {
+      return Mono.empty();
+    }
+
+    return Mono.empty();
   }
 }
