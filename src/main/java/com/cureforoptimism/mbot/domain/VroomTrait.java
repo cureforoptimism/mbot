@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @NoArgsConstructor
@@ -21,4 +22,9 @@ public class VroomTrait {
   @ManyToOne
   @JoinColumn(name = "smol_id")
   Smol smol;
+
+  @Setter
+  @ManyToOne
+  @JoinColumn(name = "vroom_id")
+  Vroom vroom;
 }

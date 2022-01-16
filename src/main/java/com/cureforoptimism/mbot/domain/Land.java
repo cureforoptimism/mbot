@@ -1,20 +1,16 @@
 package com.cureforoptimism.mbot.domain;
 
-import java.util.Set;
-import javax.persistence.*;
+import javax.persistence.Entity;
+import javax.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class SmolBody {
+public class Land {
   @Getter @Id Long id;
-
-  @Getter
-  @OneToMany(fetch = FetchType.EAGER, mappedBy = "smolBody", cascade = CascadeType.ALL)
-  Set<SmolBodyTrait> traits;
 }
