@@ -152,7 +152,7 @@ public class BirthdaysCommand implements MbotCommand {
 
       EmbedCreateSpec embed = EmbedCreateSpec.builder()
           .title("Birthday Photo!")
-          .description("Happy Birthday to the following Smols!\n\n" + String.join(", ", smolDescriptions))
+          .description("Happy Birthday to the following Smols!\n\n" + String.join(", ", smolDescriptions) + "\n\nBrought to you by Commonopoly x Cure For Optimism")
           .image("attachment://birthdays.png")
           .build();
 

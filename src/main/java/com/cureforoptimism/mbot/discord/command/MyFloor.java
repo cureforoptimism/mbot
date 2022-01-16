@@ -232,7 +232,7 @@ public class MyFloor implements MbotCommand {
       table
           .nextRow()
           .nextCell("SMOLBODY" + (numSwols > 1 ? "x" + numSwols : ""))
-          .nextCell(String.format("%.2f", bodyFloor))
+          .nextCell(String.format("%.2f", bodyFloor.multiply(BigDecimal.valueOf(numSwols))))
           .applyToCell(RIGHT_ALIGN.withWidth(12))
           .nextCell(String.format("$%.2f", usdBodyFloor.multiply(BigDecimal.valueOf(numSwols))))
           .applyToCell(RIGHT_ALIGN.withWidth(12));
