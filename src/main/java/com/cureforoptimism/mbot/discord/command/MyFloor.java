@@ -1,5 +1,6 @@
 package com.cureforoptimism.mbot.discord.command;
 
+import static com.cureforoptimism.mbot.domain.SmolType.VROOM;
 import static com.inamik.text.tables.Cell.Functions.HORIZONTAL_CENTER;
 import static com.inamik.text.tables.Cell.Functions.RIGHT_ALIGN;
 
@@ -24,14 +25,14 @@ import com.smolbrains.SmolBrainsVroomContract;
 import com.smolbrains.SmolLandContract;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionFollowupCreateSpec;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -80,284 +81,38 @@ public class MyFloor implements MbotCommand {
 
     var existingFloor =
         userFloorRepository.findByDiscordUserId(event.getInteraction().getUser().getId().asLong());
+    if (existingFloor == null) {
+      userFloorRepository.save(
+          UserFloor.builder()
+              .discordId(
+                  event.getInteraction().getUser().getUsername()
+                      + "#"
+                      + event.getInteraction().getUser().getDiscriminator())
+              .discordUserId(event.getInteraction().getUser().getId().asLong())
+              .build());
+      existingFloor =
+          userFloorRepository.findByDiscordUserId(
+              event.getInteraction().getUser().getId().asLong());
+    }
 
     event.deferReply().withEphemeral(true).block();
 
-    if (event.getOption("remove").isPresent() && existingFloor != null) {
+    if (event.getOption("remove").isPresent()) {
       final var removeOptions = event.getOption("remove").get();
-      final Long addId = Utilities.getOptionLong(removeOptions, "id").orElse(null);
-      final String typeStr = Utilities.getOptionString(removeOptions, "type").orElse("smol");
-      final SmolType type =
-          switch (typeStr) {
-            case "swol" -> SmolType.SMOL_BODY;
-            case "vroom" -> SmolType.VROOM;
-            case "land" -> SmolType.LAND;
-            case "family" -> SmolType.FAMILY;
-            default -> SmolType.SMOL;
-          };
-
-      String address = null;
-
-      if (type == SmolType.FAMILY) {
-        try {
-          address = smolBrainsContract.ownerOf(new BigInteger(String.valueOf(addId))).send();
-        } catch (Exception ex) {
-          ex.printStackTrace();
-          return Mono.empty();
-        }
+      existingFloor = handleAddOrRemove(existingFloor, true, removeOptions).orElse(null);
+      if(existingFloor == null) {
+        return Mono.empty();
       }
-
-      switch (type) {
-        case SMOL -> existingFloor.getSmols().remove(addId);
-        case SMOL_BODY -> existingFloor.getSwols().remove(addId);
-        case VROOM -> existingFloor.getVrooms().remove(addId);
-        case LAND -> existingFloor.getLand().remove(addId);
-        case FAMILY -> {
-          try {
-            final BigInteger smolsBalance = smolBrainsContract.balanceOf(address).send();
-
-            for (int x = 0; x < smolsBalance.intValue(); x++) {
-              try {
-                existingFloor
-                    .getSmols()
-                    .remove(
-                        smolBrainsContract
-                            .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
-                            .send()
-                            .longValue());
-              } catch (Exception e) {
-                e.printStackTrace();
-              }
-            }
-          } catch (Exception e) {
-            e.printStackTrace();
-            return Mono.empty();
-          }
-
-          try {
-            final BigInteger vroomsBalance = vroomContract.balanceOf(address).send();
-
-            for (int x = 0; x < vroomsBalance.intValue(); x++) {
-              try {
-                existingFloor
-                    .getVrooms()
-                    .remove(
-                        vroomContract
-                            .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
-                            .send()
-                            .longValue());
-              } catch (Exception e) {
-                e.printStackTrace();
-              }
-            }
-          } catch (Exception e) {
-            e.printStackTrace();
-            return Mono.empty();
-          }
-
-          try {
-            final BigInteger swolsBalance = smolBodiesContract.balanceOf(address).send();
-
-            for (int x = 0; x < swolsBalance.intValue(); x++) {
-              existingFloor
-                  .getSwols()
-                  .remove(
-                      smolBodiesContract
-                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
-                          .send()
-                          .longValue());
-            }
-          } catch (Exception e) {
-            e.printStackTrace();
-            return Mono.empty();
-          }
-
-          try {
-            final BigInteger landBalance = smolLandContract.balanceOf(address).send();
-
-            for (int x = 0; x < landBalance.intValue(); x++) {
-              existingFloor
-                  .getLand()
-                  .remove(
-                      smolLandContract
-                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
-                          .send()
-                          .longValue());
-            }
-          } catch (Exception e) {
-            e.printStackTrace();
-            return Mono.empty();
-          }
-        }
-      }
-
-      existingFloor = userFloorRepository.save(existingFloor);
     }
 
     if (event.getOption("add").isPresent()) {
       final var addOptions = event.getOption("add").get();
-      final Long addId = Utilities.getOptionLong(addOptions, "id").orElse(null);
-      final String typeStr = Utilities.getOptionString(addOptions, "type").orElse("smol");
-      final SmolType type =
-          switch (typeStr) {
-            case "swol" -> SmolType.SMOL_BODY;
-            case "vroom" -> SmolType.VROOM;
-            case "land" -> SmolType.LAND;
-            case "family" -> SmolType.FAMILY;
-            default -> SmolType.SMOL;
-          };
-
-      String address = null;
-
-      if (type == SmolType.FAMILY) {
-
-        if (existingFloor == null) {
-          try {
-            address = smolBrainsContract.ownerOf(new BigInteger(String.valueOf(addId))).send();
-
-            final var floorBuilder =
-                UserFloor.builder()
-                    .discordId(
-                        event.getInteraction().getUser().getUsername()
-                            + "#"
-                            + event.getInteraction().getUser().getDiscriminator())
-                    .discordUserId(event.getInteraction().getUser().getId().asLong())
-                    .smols(new HashSet<>())
-                    .swols(new HashSet<>())
-                    .land(new HashSet<>())
-                    .vrooms(new HashSet<>());
-
-            final BigInteger smolsBalance = smolBrainsContract.balanceOf(address).send();
-            if (smolsBalance.intValue() > 0) {
-              Set<Long> smolIds = new TreeSet<>();
-              for (int x = 0; x < smolsBalance.intValue(); x++) {
-                smolIds.add(
-                    smolBrainsContract
-                        .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
-                        .send()
-                        .longValue());
-              }
-              floorBuilder.smols(smolIds);
-            }
-
-            final BigInteger vroomsBalance = vroomContract.balanceOf(address).send();
-            if (vroomsBalance.intValue() > 0) {
-              Set<Long> vroomIds = new TreeSet<>();
-              for (int x = 0; x < vroomsBalance.intValue(); x++) {
-                vroomIds.add(
-                    vroomContract
-                        .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
-                        .send()
-                        .longValue());
-              }
-              floorBuilder.vrooms(vroomIds);
-            }
-
-            final BigInteger swolsBalance = smolBodiesContract.balanceOf(address).send();
-            if (swolsBalance.intValue() > 0) {
-              Set<Long> swolIds = new TreeSet<>();
-              for (int x = 0; x < swolsBalance.intValue(); x++) {
-                swolIds.add(
-                    smolBodiesContract
-                        .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
-                        .send()
-                        .longValue());
-              }
-              floorBuilder.swols(swolIds);
-            }
-
-            final BigInteger landBalance = smolLandContract.balanceOf(address).send();
-            if (landBalance.intValue() > 0) {
-              Set<Long> landIds = new TreeSet<>();
-              for (int x = 0; x < landBalance.intValue(); x++) {
-                landIds.add(
-                    smolLandContract
-                        .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
-                        .send()
-                        .longValue());
-              }
-
-              floorBuilder.land(landIds);
-            }
-
-            existingFloor = userFloorRepository.save(floorBuilder.build());
-          } catch (Exception ex) {
-            ex.printStackTrace();
-            return Mono.empty();
-          }
-        } else {
-          switch (type) {
-            case SMOL -> existingFloor.getSmols().add(addId);
-            case SMOL_BODY -> existingFloor.getSwols().add(addId);
-            case VROOM -> existingFloor.getVrooms().add(addId);
-            case LAND -> existingFloor.getLand().add(addId);
-            case FAMILY -> {
-              try {
-                address = smolBrainsContract.ownerOf(new BigInteger(String.valueOf(addId))).send();
-
-                final BigInteger smolsBalance = smolBrainsContract.balanceOf(address).send();
-
-                for (int x = 0; x < smolsBalance.intValue(); x++) {
-                  final var smolId =
-                      smolBrainsContract
-                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
-                          .send()
-                          .longValue();
-
-                  if (!existingFloor.getSmols().contains(smolId)) {
-                    existingFloor.getSmols().add(smolId);
-                  }
-                }
-
-                final BigInteger vroomsBalance = vroomContract.balanceOf(address).send();
-
-                for (int x = 0; x < vroomsBalance.intValue(); x++) {
-                  final var vroomId =
-                      vroomContract
-                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
-                          .send()
-                          .longValue();
-
-                  if (!existingFloor.getVrooms().contains(vroomId)) {
-                    existingFloor.getVrooms().add(vroomId);
-                  }
-                }
-
-                final BigInteger swolsBalance = smolBodiesContract.balanceOf(address).send();
-
-                for (int x = 0; x < swolsBalance.intValue(); x++) {
-                  final var swolId =
-                      smolBodiesContract
-                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
-                          .send()
-                          .longValue();
-
-                  if (!existingFloor.getSwols().contains(swolId)) {
-                    existingFloor.getSwols().add(swolId);
-                  }
-                }
-
-                final BigInteger landBalance = smolLandContract.balanceOf(address).send();
-                for (int x = 0; x < landBalance.intValue(); x++) {
-                  final var landId =
-                      smolLandContract
-                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
-                          .send()
-                          .longValue();
-
-                  if (!existingFloor.getLand().contains(landId)) {
-                    existingFloor.getLand().add(landId);
-                  }
-                }
-              } catch (Exception ex) {
-                ex.printStackTrace();
-                return Mono.empty();
-              }
-            }
-          }
-        }
+      existingFloor = handleAddOrRemove(existingFloor, false, addOptions).orElse(null);
+      if(existingFloor == null) {
+        return Mono.empty();
       }
     }
+
     existingFloor = userFloorRepository.save(existingFloor);
 
     // Get all objects for this fine person
@@ -551,5 +306,159 @@ public class MyFloor implements MbotCommand {
         .block();
 
     return Mono.empty();
+  }
+
+  private Optional<UserFloor> handleAddOrRemove(
+      UserFloor existingFloor, boolean remove, ApplicationCommandInteractionOption options) {
+    final Long id = Utilities.getOptionLong(options, "id").orElse(null);
+    final String typeStr = Utilities.getOptionString(options, "type").orElse("smol");
+    final SmolType type = smolTypeFromString(typeStr);
+
+    String address = null;
+
+    if (type == SmolType.FAMILY) {
+      try {
+        address = smolBrainsContract.ownerOf(new BigInteger(String.valueOf(id))).send();
+      } catch (Exception ex) {
+        ex.printStackTrace();
+        return Optional.empty();
+      }
+    }
+
+    switch (type) {
+      case SMOL:
+        if (remove) {
+          existingFloor.getSmols().remove(id);
+        } else {
+          existingFloor.getSmols().add(id);
+        }
+        break;
+      case SMOL_BODY:
+        if (remove) {
+          existingFloor.getSwols().remove(id);
+        } else {
+          existingFloor.getSwols().add(id);
+        }
+        break;
+      case VROOM:
+        if (remove) {
+          existingFloor.getVrooms().remove(id);
+        } else {
+          existingFloor.getVrooms().add(id);
+        }
+        break;
+      case LAND:
+        if (remove) {
+          existingFloor.getLand().remove(id);
+        } else {
+          existingFloor.getLand().add(id);
+        }
+        break;
+      case FAMILY:
+        try {
+          final BigInteger smolsBalance = smolBrainsContract.balanceOf(address).send();
+
+          for (int x = 0; x < smolsBalance.intValue(); x++) {
+            if (remove) {
+              existingFloor
+                  .getSmols()
+                  .remove(
+                      smolBrainsContract
+                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
+                          .send()
+                          .longValue());
+            } else {
+              existingFloor
+                  .getSmols()
+                  .add(
+                      smolBrainsContract
+                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
+                          .send()
+                          .longValue());
+            }
+          }
+
+          final BigInteger vroomsBalance = vroomContract.balanceOf(address).send();
+
+          for (int x = 0; x < vroomsBalance.intValue(); x++) {
+            if (remove) {
+              existingFloor
+                  .getVrooms()
+                  .remove(
+                      vroomContract
+                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
+                          .send()
+                          .longValue());
+            } else {
+              existingFloor
+                  .getVrooms()
+                  .add(
+                      vroomContract
+                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
+                          .send()
+                          .longValue());
+            }
+          }
+
+          final BigInteger swolsBalance = smolBodiesContract.balanceOf(address).send();
+
+          for (int x = 0; x < swolsBalance.intValue(); x++) {
+            if (remove) {
+              existingFloor
+                  .getSwols()
+                  .remove(
+                      smolBodiesContract
+                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
+                          .send()
+                          .longValue());
+            } else {
+              existingFloor
+                  .getSwols()
+                  .add(
+                      smolBodiesContract
+                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
+                          .send()
+                          .longValue());
+            }
+          }
+
+          final BigInteger landBalance = smolLandContract.balanceOf(address).send();
+
+          for (int x = 0; x < landBalance.intValue(); x++) {
+            if (remove) {
+              existingFloor
+                  .getLand()
+                  .remove(
+                      smolLandContract
+                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
+                          .send()
+                          .longValue());
+            } else {
+              existingFloor
+                  .getLand()
+                  .add(
+                      smolLandContract
+                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
+                          .send()
+                          .longValue());
+            }
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+          return Optional.empty();
+        }
+    }
+
+    return Optional.of(userFloorRepository.save(existingFloor));
+  }
+
+  private SmolType smolTypeFromString(String typeStr) {
+    return switch (typeStr) {
+      case "swol" -> SmolType.SMOL_BODY;
+      case "vroom" -> VROOM;
+      case "land" -> SmolType.LAND;
+      case "family" -> SmolType.FAMILY;
+      default -> SmolType.SMOL;
+    };
   }
 }
