@@ -72,6 +72,7 @@ public class FloorCommand implements MbotCommand {
 
               return c.createMessage(
                   MessageCreateSpec.builder()
+                      .content("Like !floor? Then you're gonna LOVE /floor! Give it a try, today!")
                       .addFile(
                           "floor.png",
                           new ByteArrayInputStream(floorService.getCurrentFloorImageBytes()))
