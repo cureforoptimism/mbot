@@ -41,6 +41,7 @@ public class BirthdaysCommand implements MbotCommand {
   private final SmolRepository smolRepository;
   private final Utilities utilities;
   private BufferedImage bgImage;
+  private BufferedImage partyHat;
 
   public BirthdaysCommand(SmolRepository smolRepository, Utilities utilities) {
     this.smolRepository = smolRepository;
@@ -48,6 +49,7 @@ public class BirthdaysCommand implements MbotCommand {
 
     try {
       this.bgImage = ImageIO.read(new ClassPathResource("birthday_backdrop.png").getInputStream());
+      this.partyHat = ImageIO.read(new ClassPathResource("party-hat.png").getInputStream());
     } catch (Exception ex) {
       log.error(ex.getMessage());
       System.exit(-1);
@@ -141,6 +143,7 @@ public class BirthdaysCommand implements MbotCommand {
       xOffset -= 130;
       graphics.setComposite(AlphaComposite.SrcOver);
       graphics.drawImage(smolImage, xOffset - 40, 0, null);
+      graphics.drawImage(partyHat, xOffset - 40, 0, null);
     }
 
     try {

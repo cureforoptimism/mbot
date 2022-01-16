@@ -79,6 +79,6 @@ public class SmolCommand implements MbotCommand {
       log.error("Error with smol command: " + ex.getMessage());
     }
 
-    return null;
+    return Mono.empty();
   }
 }
