@@ -27,7 +27,8 @@ public class UserFloor {
   Long discordUserId;
 
   @Column(nullable = false)
-  @Getter String discordId;
+  @Getter
+  String discordId;
 
   @Fetch(FetchMode.JOIN)
   @ElementCollection

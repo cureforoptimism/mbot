@@ -95,14 +95,17 @@ public class MyFloor implements MbotCommand {
 
     event.deferReply().withEphemeral(true).block();
 
-    String userDiscriminator = event.getInteraction().getUser().getUsername() + "#" + event.getInteraction().getUser().getDiscriminator();
+    String userDiscriminator =
+        event.getInteraction().getUser().getUsername()
+            + "#"
+            + event.getInteraction().getUser().getDiscriminator();
 
     if (event.getOption("remove").isPresent()) {
-      log.info("/myfloor remove received: "  + userDiscriminator);
+      log.info("/myfloor remove received: " + userDiscriminator);
 
       final var removeOptions = event.getOption("remove").get();
       existingFloor = handleAddOrRemove(existingFloor, true, removeOptions).orElse(null);
-      if(existingFloor == null) {
+      if (existingFloor == null) {
         return Mono.empty();
       }
 
@@ -112,7 +115,7 @@ public class MyFloor implements MbotCommand {
 
       final var addOptions = event.getOption("add").get();
       existingFloor = handleAddOrRemove(existingFloor, false, addOptions).orElse(null);
-      if(existingFloor == null) {
+      if (existingFloor == null) {
         return Mono.empty();
       }
 
@@ -120,7 +123,6 @@ public class MyFloor implements MbotCommand {
     } else {
       log.info("/myfloor get received: " + userDiscriminator);
     }
-
 
     // Get all objects for this fine person
     final Set<Smol> smols =

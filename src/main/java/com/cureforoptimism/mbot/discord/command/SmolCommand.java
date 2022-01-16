@@ -1,6 +1,7 @@
 package com.cureforoptimism.mbot.discord.command;
 
 import com.cureforoptimism.mbot.Utilities;
+import com.cureforoptimism.mbot.repository.SmolRepository;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
@@ -15,6 +16,7 @@ import reactor.core.publisher.Mono;
 @AllArgsConstructor
 @Slf4j
 public class SmolCommand implements MbotCommand {
+  private final SmolRepository smolRepository;
   private final Utilities utilities;
 
   @Override

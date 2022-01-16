@@ -17,7 +17,9 @@ public class TokenService {
   private String file;
 
   public String getDiscordToken() {
-    return System.getenv("PROD") == null ? getPropertyValue("discord_access_token_dev") : getPropertyValue("discord_access_token");
+    return System.getenv("PROD") == null
+        ? getPropertyValue("discord_access_token_dev")
+        : getPropertyValue("discord_access_token");
   }
 
   public String getTwitterApiKey() {

@@ -54,11 +54,11 @@ public class AverageIqCommand implements MbotCommand {
   @Override
   public Mono<Void> handle(ChatInputInteractionEvent event) {
     try {
-    BigInteger averageIqBig = smolBrainsContract.averageIQ().send();
-    MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
-    final var iq = new BigDecimal(averageIqBig, 18, mc);
+      BigInteger averageIqBig = smolBrainsContract.averageIQ().send();
+      MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
+      final var iq = new BigDecimal(averageIqBig, 18, mc);
 
-    event.reply("Average IQ is currently: " + iq).block();
+      event.reply("Average IQ is currently: " + iq).block();
     } catch (Exception ignored) {
       return Mono.empty();
     }

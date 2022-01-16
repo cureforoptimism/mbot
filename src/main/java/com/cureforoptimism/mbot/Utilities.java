@@ -7,6 +7,7 @@ import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
 import static com.cureforoptimism.mbot.Constants.SMOL_VROOM_TOTAL_SUPPLY;
 
 import com.cureforoptimism.mbot.domain.RarityRank;
+import com.cureforoptimism.mbot.domain.Smol;
 import com.cureforoptimism.mbot.domain.SmolBodyRarityRank;
 import com.cureforoptimism.mbot.domain.SmolBodyTrait;
 import com.cureforoptimism.mbot.domain.SmolType;
@@ -16,6 +17,7 @@ import com.cureforoptimism.mbot.domain.VroomTrait;
 import com.cureforoptimism.mbot.repository.RarityRankRepository;
 import com.cureforoptimism.mbot.repository.SmolBodyRarityRankRepository;
 import com.cureforoptimism.mbot.repository.SmolBodyTraitsRepository;
+import com.cureforoptimism.mbot.repository.SmolRepository;
 import com.cureforoptimism.mbot.repository.TraitsRepository;
 import com.cureforoptimism.mbot.repository.VroomRarityRankRepository;
 import com.cureforoptimism.mbot.repository.VroomTraitsRepository;
@@ -28,6 +30,7 @@ import com.smolbrains.SmolBodiesContract;
 import com.smolbrains.SmolBrainsContract;
 import com.smolbrains.SmolBrainsRocketContract;
 import com.smolbrains.SmolBrainsVroomContract;
+import discord4j.common.JacksonResources;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.spec.EmbedCreateSpec;
@@ -53,6 +56,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -62,9 +69,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.imageio.ImageIO;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -81,6 +90,7 @@ public class Utilities {
   private final VroomRarityRankRepository vroomRarityRankRepository;
   private final SmolBodyRarityRankRepository smolBodyRarityRankRepository;
   private final SmolBrainsRocketContract smolBrainsRocketContract;
+  private final SmolRepository smolRepository;
   private String smolBaseUri;
   private String vroomBaseUri;
   private String smolBodyBaseUri;
@@ -96,7 +106,8 @@ public class Utilities {
       SmolBodyTraitsRepository smolBodyTraitsRepository,
       SmolBodyRarityRankRepository smolBodyRarityRankRepository,
       SmolBodiesContract smolBodiesContract,
-      SmolBrainsRocketContract smolBrainsRocketContract) {
+      SmolBrainsRocketContract smolBrainsRocketContract,
+      SmolRepository smolRepository) {
     this.treasureService = treasureService;
     this.rarityRankRepository = rarityRankRepository;
     this.traitsRepository = traitsRepository;
@@ -107,6 +118,7 @@ public class Utilities {
     this.smolBodyRarityRankRepository = smolBodyRarityRankRepository;
     this.smolBrainsContract = smolBrainsContract;
     this.smolBrainsRocketContract = smolBrainsRocketContract;
+    this.smolRepository = smolRepository;
 
     try {
       this.smolBaseUri = smolBrainsContract.baseURI().send();
@@ -118,6 +130,61 @@ public class Utilities {
     }
   }
 
+  private void generateSmolBirthdays() {
+    LocalDate from = LocalDate.of(2021, 1, 1);
+    LocalDate to = LocalDate.of(2022, 1, 1);
+    long days = from.until(to, ChronoUnit.DAYS);
+
+    final var allSmols = smolRepository.findAll();
+    for (Smol smol : allSmols) {
+      long randomDay = ThreadLocalRandom.current().nextLong(days + 1);
+      LocalDate randomDate = from.plusDays(randomDay);
+      smol.setBirthday(Date.from(randomDate.atStartOfDay().toInstant(ZoneOffset.UTC)));
+      smolRepository.save(smol);
+    }
+  }
+
+  private void generateSmolNames() {
+    final var maleSmols = smolRepository.findByTraits_Value("Male");
+
+    final JacksonResources mapper = JacksonResources.create();
+    final var maleBytes = new ClassPathResource("male_names.json");
+    try {
+      String[] maleNames =
+          mapper
+              .getObjectMapper()
+              .readValue(maleBytes.getInputStream().readAllBytes(), String[].class);
+
+      int currentNum = 0;
+      for (Smol smol : maleSmols) {
+        smol.setName(maleNames[currentNum++ % maleNames.length]);
+        smolRepository.save(smol);
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    final var ladySmols = smolRepository.findByTraits_Value("Female");
+    final var ladyBytes = new ClassPathResource("lady_names.json");
+    try {
+      String[] ladyNames =
+          mapper
+              .getObjectMapper()
+              .readValue(ladyBytes.getInputStream().readAllBytes(), String[].class);
+
+      int currentNum = 0;
+      for (Smol smol : ladySmols) {
+        smol.setName(ladyNames[currentNum++ % ladyNames.length]);
+        smolRepository.save(smol);
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    log.info("Done generating smol names");
+  }
+
+  @Transactional(readOnly = true)
   public Optional<EmbedCreateSpec> getSmolEmbed(String id) {
     StringBuilder output = new StringBuilder();
     int smolId;
@@ -148,7 +215,12 @@ public class Utilities {
       // no-op; execution failed means not boarded
     }
 
-    output.append("IQ: ").append(treasureService.getIq(smolId)).append("\n");
+    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MMMMM d");
+    Smol smol = smolRepository.getById(smolLongId);
+
+    output.append("Name: ").append(smol.getName()).append("\n");
+    output.append("Birthday: ").append(simpleDateFormat.format(smol.getBirthday())).append("\n\n");
+
     try {
       output.append("Currently boarded \uD83D\uDE80: ").append(boarded ? "Yes!" : "Nope.");
 
@@ -205,7 +277,13 @@ public class Utilities {
     try {
       return Optional.of(
           EmbedCreateSpec.builder()
-              .title("SMOL #" + id + "\nRANK: #" + rarityRank.getRank() + " (Unofficial)")
+              .title(
+                  "SMOL #"
+                      + id
+                      + "\nRANK: #"
+                      + rarityRank.getRank()
+                      + " (Unofficial)\nIQ: "
+                      + treasureService.getIq(smolId))
               .author(
                   "SmolBot",
                   null,
@@ -215,8 +293,8 @@ public class Utilities {
                       .orElse("")) // Hardcoded to 0 brain size, for now
               .description(output.toString())
               .addField(
-                  "Ranking Notes",
-                  "Ranking is unofficial. Smols with unique traits are weighted the highest. Traits that occur < %0.65 are weighted 2nd highest, %0.80 third highest",
+                  "Notes",
+                  "Ranking (and name, and birthday) is unofficial. Smols with unique traits are weighted the highest. Traits that occur < %0.65 are weighted 2nd highest, %0.80 third highest",
                   true)
               .build());
     } catch (Exception ex) {
