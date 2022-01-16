@@ -77,8 +77,6 @@ public class MyFloor implements MbotCommand {
 
   @Override
   public Mono<Void> handle(ChatInputInteractionEvent event) {
-    log.info("/myfloor received");
-
     var existingFloor =
         userFloorRepository.findByDiscordUserId(event.getInteraction().getUser().getId().asLong());
     if (existingFloor == null) {
@@ -97,23 +95,32 @@ public class MyFloor implements MbotCommand {
 
     event.deferReply().withEphemeral(true).block();
 
+    String userDiscriminator = event.getInteraction().getUser().getUsername() + "#" + event.getInteraction().getUser().getDiscriminator();
+
     if (event.getOption("remove").isPresent()) {
+      log.info("/myfloor remove received: "  + userDiscriminator);
+
       final var removeOptions = event.getOption("remove").get();
       existingFloor = handleAddOrRemove(existingFloor, true, removeOptions).orElse(null);
       if(existingFloor == null) {
         return Mono.empty();
       }
-    }
 
-    if (event.getOption("add").isPresent()) {
+      existingFloor = userFloorRepository.save(existingFloor);
+    } else if (event.getOption("add").isPresent()) {
+      log.info("/myfloor add received: " + userDiscriminator);
+
       final var addOptions = event.getOption("add").get();
       existingFloor = handleAddOrRemove(existingFloor, false, addOptions).orElse(null);
       if(existingFloor == null) {
         return Mono.empty();
       }
+
+      existingFloor = userFloorRepository.save(existingFloor);
+    } else {
+      log.info("/myfloor get received: " + userDiscriminator);
     }
 
-    existingFloor = userFloorRepository.save(existingFloor);
 
     // Get all objects for this fine person
     final Set<Smol> smols =

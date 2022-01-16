@@ -1,6 +1,7 @@
 package com.cureforoptimism.mbot.domain;
 
 import java.util.Set;
+import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -22,8 +23,10 @@ public class UserFloor {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   Long id;
 
+  @Column(nullable = false, unique = true)
   Long discordUserId;
 
+  @Column(nullable = false)
   @Getter String discordId;
 
   @Fetch(FetchMode.JOIN)
