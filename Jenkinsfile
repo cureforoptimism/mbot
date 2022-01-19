@@ -3,6 +3,4 @@ pipeline {
    environment {
        registry = "labmain/mbot"
    }
-   stages {
-   }
 }
