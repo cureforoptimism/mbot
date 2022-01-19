@@ -15,4 +15,6 @@ COPY --from=temp_build_image $APP_HOME/build/libs/$ARTIFACT_NAME $APP_HOME/build
 ENV TZ="America/Denver"
 ENV PROD="true"
 
+#CMD exec /bin/bash -c "trap : TERM INT; sleep infinity & wait"
+
 CMD java -jar /mbot/build/libs/mbot-1.0-SNAPSHOT.jar
