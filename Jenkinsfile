@@ -4,18 +4,6 @@ pipeline {
        registry = "labmain/mbot"
    }
    stages {
-       stage('Publish') {
-           steps{
-               script {
-                   sh "echo $PATH"
-                   def appimage = docker.build registry + ":$BUILD_NUMBER"
-                   docker.withRegistry( '', '' ) {
-                       appimage.push()
-                       appimage.push('latest')
-                   }
-               }
-           }
-       }
        stage ('Deploy') {
            steps {
                script{
