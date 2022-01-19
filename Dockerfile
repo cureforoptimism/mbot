@@ -1,7 +1,7 @@
 FROM amazoncorretto:17 as temp_build_image
 ENV APP_HOME=/mbot
 WORKDIR $APP_HOME
-COPY build.gradle settings.gradle gradlew $APP_HOME
+COPY build.gradle settings.gradle gradlew $APP_HOME/
 COPY gradle $APP_HOME/gradle
 RUN ./gradlew bootJar 2>/dev/null || true
 COPY . .
