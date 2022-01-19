@@ -7,6 +7,7 @@ pipeline {
        stage('Publish') {
            steps{
                script {
+                   sh "echo $PATH
                    def appimage = docker.build registry + ":$BUILD_NUMBER"
                    docker.withRegistry( '', '' ) {
                        appimage.push()
