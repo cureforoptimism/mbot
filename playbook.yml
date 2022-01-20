@@ -3,12 +3,6 @@
   - name: Deploy the service
     k8s:
       state: present
-      definition: ""
+      definition: "{{ lookup('file', 'kubernetes.yaml') | from_yaml }}"
       validate_certs: no
       namespace: default
-  - name: Deploy the application
-    k8s:
-      state: present
-      validate_certs: no
-      namespace: default
-      definition: ""

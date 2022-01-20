@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mbot
+spec:
+  serviceName: mbot
+  template:
+    metadata:
+      labels:
+        app: mbot
+    spec:
+      containers:
+      - image: localhost:32000/mbot
+        name: mbot
+        env:
+        - name: MYSQL_HOST
+          value: mysql
+        - name: MYSQL_PORT
+          value: "3306"
+        volumeMounts:
+        - name: mbot-persistent-storage
+          mountPath: /mbot/img_cache
+      volumes:
+      - name: mbot-persistent-storage
+        persistentVolumeClaim:
+          claimName: mbot-pv-claim
+  selector:
+    matchLabels:
+      app: mbot
