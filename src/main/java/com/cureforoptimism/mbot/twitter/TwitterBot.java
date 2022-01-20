@@ -70,6 +70,10 @@ public class TwitterBot {
 
   @Scheduled(fixedDelay = 15000)
   public synchronized void postNewTweets() {
+    if(System.getenv("PROD") == null) {
+      return;
+    }
+
     if (lastTweetedBlockTimestamp == null) {
       lastPostedTweetTime = LocalDateTime.now(ZoneOffset.UTC).minus(11, ChronoUnit.MINUTES);
     }
