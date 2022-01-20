@@ -5,8 +5,12 @@ pipeline {
    }
    stages {
        stage('Build Dockerfile and Publish') {
+           environment {
+               TOKENS = credentials('tokens.properties')
+           }
            steps{
                script {
+                   sh "cp ${TOKENS} ${WORKSPACE}/src/main/resources"
                    def appimage = docker.build registry + ":$BUILD_NUMBER"
                    docker.withRegistry( '', '' ) {
                        appimage.push()
