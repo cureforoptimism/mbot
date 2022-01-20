@@ -11,12 +11,6 @@ pipeline {
                }
            }
            steps {
-               // Create our project directory.
-               sh 'mkdir -p ${WORKSPACE}/temp'
-
-               // Copy all files in our Jenkins workspace to our project directory.
-               sh 'cp -r ${WORKSPACE}/* /mbot'
-               
                // Build the app.
                sh './gradlew bootJar'
            }
