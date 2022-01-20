@@ -11,11 +11,13 @@ import discord4j.core.spec.EmbedCreateSpec;
 import java.text.NumberFormat;
 import java.time.Instant;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 @AllArgsConstructor
 @Component
+@Slf4j
 public class MagicCommand implements MbotCommand {
   private final DiscordBot discordBot;
   private final CoinGeckoService coinGeckoService;
@@ -37,11 +39,15 @@ public class MagicCommand implements MbotCommand {
 
   @Override
   public Mono<Message> handle(MessageCreateEvent event) {
+    log.info("!magic command received");
+
     return event.getMessage().getChannel().flatMap(c -> c.createMessage(getMagicEmbed()));
   }
 
   @Override
   public Mono<Void> handle(ChatInputInteractionEvent event) {
+    log.info("/magic command received");
+
     event.reply().withEmbeds(getMagicEmbed()).block();
 
     return Mono.empty();
