@@ -13,15 +13,10 @@ pipeline {
            steps {
                // Create our project directory.
                sh 'mkdir -p ${WORKSPACE}/temp'
-               sh 'cd ${WORKSPACE}/temp'
-               sh 'cp ${WORKSPACE}/build.gradle ${WORKSPACE}/temp && cp ${WORKSPACE}/settings.gradle ${WORKSPACE}/temp && cp ${WORKSPACE}/gradlew ${WORKSPACE}/temp'
-
-               // Build dependency layer
-               sh './gradlew bootJar 2>/dev/null || true'
-               sh 'rm -Rf ${WORKSPACE}/temp'
 
                // Copy all files in our Jenkins workspace to our project directory.
                sh 'cp -r ${WORKSPACE}/* /mbot'
+               
                // Build the app.
                sh './gradlew bootJar'
            }
