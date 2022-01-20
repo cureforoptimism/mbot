@@ -97,16 +97,18 @@ public class BirthdaysCommand implements MbotCommand {
 
     Set<Smol> birthdaySmols = smolRepository.findByBirthdayIsBetween(startDate, endDate);
 
-    final var ids =
-        birthdaySmols.stream().map(smol -> smol.getId().toString()).sorted().toList();
+    final var ids = birthdaySmols.stream().map(smol -> smol.getId().toString()).sorted().toList();
 
     List<String> smolDescriptions = new ArrayList<>();
     final List<BufferedImage> smolImages = new ArrayList<>();
-    birthdaySmols.stream().forEach(s -> {
-      smolDescriptions.add(s.getName() + " (#" + s.getId() + ")");
-        var imgOpt = utilities.getSmolBufferedImage(s.getId().toString(), SmolType.SMOL, true);
-        imgOpt.ifPresent(smolImages::add);
-    });
+    birthdaySmols.stream()
+        .forEach(
+            s -> {
+              smolDescriptions.add(s.getName() + " (#" + s.getId() + ")");
+              var imgOpt =
+                  utilities.getSmolBufferedImage(s.getId().toString(), SmolType.SMOL, true);
+              imgOpt.ifPresent(smolImages::add);
+            });
 
     List<BufferedImage> smolImagesTransparent = new ArrayList<>();
     for (BufferedImage smolImage : smolImages) {
@@ -134,7 +136,7 @@ public class BirthdaysCommand implements MbotCommand {
     Graphics2D graphics = output.createGraphics();
 
     graphics.setComposite(AlphaComposite.SrcOver);
-    for(int tileX = 0; tileX < maxSmolWidths; tileX += 404) {
+    for (int tileX = 0; tileX < maxSmolWidths; tileX += 404) {
       graphics.drawImage(Scalr.resize(bgImage, Mode.FIT_EXACT, 404), tileX, 0, null);
     }
 
@@ -150,16 +152,24 @@ public class BirthdaysCommand implements MbotCommand {
       ByteArrayOutputStream smolOutputStream = new ByteArrayOutputStream();
       ImageIO.write(output, "png", smolOutputStream);
 
-      EmbedCreateSpec embed = EmbedCreateSpec.builder()
-          .title("Birthday Photo!")
-          .description("Happy Birthday to the following Smols!\n\n" + String.join(", ", smolDescriptions) + "\n\nBrought to you by Commonopoly x Cure For Optimism")
-          .image("attachment://birthdays.png")
-          .build();
+      EmbedCreateSpec embed =
+          EmbedCreateSpec.builder()
+              .title("Birthday Photo!")
+              .description(
+                  "Happy Birthday to the following Smols!\n\n"
+                      + String.join(", ", smolDescriptions)
+                      + "\n\nBrought to you by Commonopoly x Cure For Optimism")
+              .image("attachment://birthdays.png")
+              .build();
 
-      event.createFollowup(InteractionFollowupCreateSpec.builder()
-              .addFile("birthdays.png", new ByteArrayInputStream(smolOutputStream.toByteArray()))
-              .addEmbed(embed)
-          .build()).block();
+      event
+          .createFollowup(
+              InteractionFollowupCreateSpec.builder()
+                  .addFile(
+                      "birthdays.png", new ByteArrayInputStream(smolOutputStream.toByteArray()))
+                  .addEmbed(embed)
+                  .build())
+          .block();
     } catch (Exception ex) {
       log.error(ex.toString());
     }

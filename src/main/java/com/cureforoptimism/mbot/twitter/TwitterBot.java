@@ -70,7 +70,7 @@ public class TwitterBot {
 
   @Scheduled(fixedDelay = 15000)
   public synchronized void postNewTweets() {
-    if(System.getenv("PROD") == null) {
+    if (System.getenv("PROD") == null) {
       return;
     }
 
@@ -115,7 +115,7 @@ public class TwitterBot {
 
   @Scheduled(fixedDelay = 60000, initialDelay = 1000)
   public synchronized void postNewSales() {
-    if(System.getenv("PROD") == null) {
+    if (System.getenv("PROD") == null) {
       return;
     }
 
