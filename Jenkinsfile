@@ -8,7 +8,7 @@ pipeline {
            steps{
                script {
                    def appimage = docker.build registry + ":$BUILD_NUMBER"
-                   docker.withRegistry( '', registryCredential ) {
+                   docker.withRegistry( '', '' ) {
                        appimage.push()
                        appimage.push('latest')
                    }
