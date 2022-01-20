@@ -95,7 +95,7 @@ public class MagicCommand implements MbotCommand {
                 + (daysSinceAth == 0 ? " (Today)" : " (" + daysSinceAth + " days ago)")
                 + "\n24hr high/low: $"
                 + decimalFormat.format(coinData.getMarketData().getHigh24h().get("usd"))
-                + "/ $"
+                + " / $"
                 + decimalFormat.format(coinData.getMarketData().getLow24h().get("usd")))
         .addField(
             "Current Prices",
