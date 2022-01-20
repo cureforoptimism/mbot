@@ -4,18 +4,7 @@ pipeline {
        registry = "labmain:13000/mbot_delete_me"
    }
    stages {
-       stage('Build Deps Image') {
-           agent {
-               docker {
-                   image 'amazoncorretto:17'
-               }
-           }
-           steps {
-               // Build the app.
-               sh './gradlew bootJar'
-           }
-       }
-       stage('Publish') {
+       stage('Build Dockerfile and Publish') {
            steps{
                script {
                    def appimage = docker.build registry + ":$BUILD_NUMBER"
