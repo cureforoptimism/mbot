@@ -24,7 +24,7 @@ pipeline {
       stage ('Deploy') {
            steps {
                script{
-                   def image_id = "localhost" + ":$BUILD_NUMBER"
+                   def image_id = "localhost:32000/mbot" + ":$BUILD_NUMBER"
                    sh "ansible-playbook  playbook.yml --extra-vars \"image=${image_id}\""
                }
            }
