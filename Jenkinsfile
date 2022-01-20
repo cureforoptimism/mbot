@@ -1,7 +1,7 @@
 pipeline {
    agent any
    environment {
-       registry = "labmain:13000/mbot_delete_me"
+       registry = "labmain:32000/mbot_delete_me"
    }
    stages {
        stage('Build Dockerfile and Publish') {
