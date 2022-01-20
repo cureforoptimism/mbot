@@ -8,6 +8,7 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateFields.Footer;
 import discord4j.core.spec.EmbedCreateSpec;
+import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -59,8 +60,11 @@ public class MagicCommand implements MbotCommand {
   private EmbedCreateSpec getMagicEmbed() {
     CoinFullData coinData = coinGeckoService.getCoinFullData();
 
+    DecimalFormat decimalFormat = new DecimalFormat("#.00");
     final Instant athDate = Instant.parse(coinData.getMarketData().getAthDate().get("usd"));
-    final long daysSinceAth = ChronoUnit.DAYS.between(LocalDate.ofInstant(athDate, ZoneId.systemDefault()), LocalDate.now());
+    final long daysSinceAth =
+        ChronoUnit.DAYS.between(
+            LocalDate.ofInstant(athDate, ZoneId.systemDefault()), LocalDate.now());
 
     return EmbedCreateSpec.builder()
         .title("MAGIC - $" + discordBot.getCurrentPrice())
@@ -87,12 +91,12 @@ public class MagicCommand implements MbotCommand {
                 + NumberFormat.getIntegerInstance().format(coinData.getMarketData().getMaxSupply())
                 + " MAGIC\n"
                 + "All time high: $"
-                + coinData.getMarketData().getAth().get("usd")
+                + decimalFormat.format(coinData.getMarketData().getAth().get("usd"))
                 + (daysSinceAth == 0 ? " (Today)" : " (" + daysSinceAth + " days ago)")
                 + "\n24hr high/low: $"
-                + coinData.getMarketData().getHigh24h().get("usd")
+                + decimalFormat.format(coinData.getMarketData().getHigh24h().get("usd"))
                 + "/ $"
-                + coinData.getMarketData().getLow24h().get("usd"))
+                + decimalFormat.format(coinData.getMarketData().getLow24h().get("usd")))
         .addField(
             "Current Prices",
             "USD: `"
