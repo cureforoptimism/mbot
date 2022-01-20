@@ -115,6 +115,10 @@ public class TwitterBot {
 
   @Scheduled(fixedDelay = 60000, initialDelay = 1000)
   public synchronized void postNewSales() {
+    if(System.getenv("PROD") == null) {
+      return;
+    }
+
     if (lastTweetedBlockTimestamp == null) {
       lastTweetedBlockTimestamp =
           smolSalesRepository
