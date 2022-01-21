@@ -61,8 +61,7 @@ public class MbotCommandListener {
             .block();
       }
     } catch (Exception ex) {
-      if (ex instanceof ClientException) {
-        final var clientException = (ClientException) ex;
+      if (ex instanceof final ClientException clientException) {
         if (clientException.getStatus().code() != 403) {
           log.error("Error received in listener loop. Will resume.", ex);
         }
