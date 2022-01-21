@@ -11,6 +11,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import javax.imageio.ImageIO;
 import lombok.extern.slf4j.Slf4j;
 import org.imgscalr.Scalr;
@@ -72,19 +74,9 @@ public class MemeCommand implements MbotCommand {
       }
 
       try {
-        final var imageSmol = utilities.getTransparentImage(tokenId);
+        final var output = getDistracted(tokenId);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        BufferedImage output =
-            new BufferedImage(imgMeme.getWidth(), imgMeme.getHeight(), BufferedImage.TYPE_INT_RGB);
-        Graphics2D graphics = output.createGraphics();
-        graphics.setComposite(AlphaComposite.SrcOver);
-        graphics.drawImage(imgMeme, 0, 0, null);
-
-        final var resized = Scalr.resize(imageSmol, 1400);
-        graphics.drawImage(resized, -130, 205, null);
-        graphics.dispose();
-
         ImageIO.write(output, "jpg", outputStream);
 
         return event
@@ -125,45 +117,13 @@ public class MemeCommand implements MbotCommand {
     }
 
     try {
+      BufferedImage output =
+          switch (typeStr) {
+            case "distracted" -> getDistracted(id.toString());
+            default -> getWagie(id.toString());
+          };
+
       ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-      BufferedImage output;
-
-      BufferedImage imageSmol;
-
-      switch (typeStr) {
-        case "distracted":
-          imageSmol =  utilities.getTransparentImage(id.toString());
-          output =
-              new BufferedImage(
-                  imgMeme.getWidth(), imgMeme.getHeight(), BufferedImage.TYPE_INT_RGB);
-          Graphics2D g = output.createGraphics();
-          g.setComposite(AlphaComposite.SrcOver);
-          g.drawImage(imgMeme, 0, 0, null);
-
-          final var r = Scalr.resize(imageSmol, 1400);
-          g.drawImage(r, -130, 205, null);
-          g.dispose();
-
-          break;
-        default:
-          imageSmol =  utilities.getTransparentImage(id.toString(), true);
-          output =
-              new BufferedImage(
-                  imgMcDonaldsBg.getWidth(),
-                  imgMcDonaldsBg.getHeight(),
-                  BufferedImage.TYPE_INT_RGB);
-          Graphics2D graphics = output.createGraphics();
-          graphics.setComposite(AlphaComposite.SrcOver);
-          graphics.drawImage(imgMcDonaldsBg, 0, 0, null);
-
-          final var resized = Scalr.resize(imageSmol, 500);
-          graphics.drawImage(resized, 210, 110, null);
-          graphics.drawImage(imgMcDonaldsHat, 370, 275, null);
-          graphics.dispose();
-
-          break;
-      }
-
       ImageIO.write(output, "jpg", outputStream);
 
       final var embed =
@@ -185,5 +145,37 @@ public class MemeCommand implements MbotCommand {
     }
 
     return Mono.empty();
+  }
+
+  private BufferedImage getWagie(String id) throws URISyntaxException, IOException {
+    final BufferedImage imageSmol = utilities.getTransparentImage(id, true);
+    final var output =
+        new BufferedImage(
+            imgMcDonaldsBg.getWidth(), imgMcDonaldsBg.getHeight(), BufferedImage.TYPE_INT_RGB);
+    Graphics2D graphics = output.createGraphics();
+    graphics.setComposite(AlphaComposite.SrcOver);
+    graphics.drawImage(imgMcDonaldsBg, 0, 0, null);
+
+    final var resized = Scalr.resize(imageSmol, 500);
+    graphics.drawImage(resized, 210, 110, null);
+    graphics.drawImage(imgMcDonaldsHat, 370, 275, null);
+    graphics.dispose();
+
+    return output;
+  }
+
+  private BufferedImage getDistracted(String id) throws URISyntaxException, IOException {
+    final BufferedImage imageSmol = utilities.getTransparentImage(id);
+    final var output =
+        new BufferedImage(imgMeme.getWidth(), imgMeme.getHeight(), BufferedImage.TYPE_INT_RGB);
+    Graphics2D g = output.createGraphics();
+    g.setComposite(AlphaComposite.SrcOver);
+    g.drawImage(imgMeme, 0, 0, null);
+
+    final var r = Scalr.resize(imageSmol, 1400);
+    g.drawImage(r, -130, 205, null);
+    g.dispose();
+
+    return output;
   }
 }
