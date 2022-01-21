@@ -140,7 +140,7 @@ public class MemeCommand implements MbotCommand {
           g.setComposite(AlphaComposite.SrcOver);
           g.drawImage(imgMeme, 0, 0, null);
 
-          final var r = Scalr.resize(imageSmol, 350);
+          final var r = Scalr.resize(imageSmol, 1400);
           g.drawImage(r, -130, 205, null);
           g.dispose();
 
