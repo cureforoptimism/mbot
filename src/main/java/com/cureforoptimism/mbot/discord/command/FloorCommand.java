@@ -18,6 +18,7 @@ import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -33,14 +34,17 @@ public class FloorCommand implements MbotCommand {
     EmbedCreateSpec floorEmbed;
     EmbedCreateSpec floorMagicEmbed;
     EmbedCreateSpec floorUsdEmbed;
+    EmbedCreateSpec mcDonaldsEmbed;
 
     FloorResponse(
         EmbedCreateSpec floorEmbed,
         EmbedCreateSpec floorMagicEmbed,
-        EmbedCreateSpec floorUsdEmbed) {
+        EmbedCreateSpec floorUsdEmbed,
+        EmbedCreateSpec mcDonaldsEmbed) {
       this.floorEmbed = floorEmbed;
       this.floorMagicEmbed = floorMagicEmbed;
       this.floorUsdEmbed = floorUsdEmbed;
+      this.mcDonaldsEmbed = mcDonaldsEmbed;
     }
   }
 
@@ -70,19 +74,31 @@ public class FloorCommand implements MbotCommand {
             c -> {
               FloorResponse floorResponse = getFloorMessage();
 
-              return c.createMessage(
-                  MessageCreateSpec.builder()
-                      .content("Like !floor? Then you're gonna LOVE /floor! Give it a try, today!")
-                      .addFile(
-                          "floor.png",
-                          new ByteArrayInputStream(floorService.getCurrentFloorImageBytes()))
-                      .addFile(
-                          "floor_usd.png",
-                          new ByteArrayInputStream(floorService.getCurrentFloorUsdImageBytes()))
-                      .addEmbed(floorResponse.floorMagicEmbed)
-                      .addEmbed(floorResponse.floorUsdEmbed)
-                      .addEmbed(floorResponse.floorEmbed)
-                      .build());
+              try {
+                return c.createMessage(
+                    MessageCreateSpec.builder()
+                        .content(
+                            "Like !floor? Then you're gonna LOVE /floor! Give it a try, today!")
+                        .addFile(
+                            "floor.png",
+                            new ByteArrayInputStream(floorService.getCurrentFloorImageBytes()))
+                        .addFile(
+                            "floor_usd.png",
+                            new ByteArrayInputStream(floorService.getCurrentFloorUsdImageBytes()))
+                        .addFile(
+                            "mcdonalds_application.png",
+                            new ByteArrayInputStream(
+                                new ClassPathResource("mcdonalds_application.png")
+                                    .getInputStream()
+                                    .readAllBytes()))
+                        .addEmbed(floorResponse.floorMagicEmbed)
+                        .addEmbed(floorResponse.floorUsdEmbed)
+                        .addEmbed(floorResponse.floorEmbed)
+                        .addEmbed(floorResponse.mcDonaldsEmbed)
+                        .build());
+              } catch (Exception ex) {
+                return Mono.empty();
+              }
             });
   }
 
@@ -92,23 +108,33 @@ public class FloorCommand implements MbotCommand {
 
     FloorResponse floorResponse = getFloorMessage();
 
-    event
-        .deferReply()
-        .then(
-            event.createFollowup(
-                InteractionFollowupCreateSpec.builder()
-                    .addFile(
-                        "floor.png",
-                        new ByteArrayInputStream(floorService.getCurrentFloorImageBytes()))
-                    .addFile(
-                        "floor_usd.png",
-                        new ByteArrayInputStream(floorService.getCurrentFloorUsdImageBytes()))
-                    .addEmbed(floorResponse.floorMagicEmbed)
-                    .addEmbed(floorResponse.floorUsdEmbed)
-                    .addEmbed(floorResponse.floorEmbed)
-                    .build()))
-        .block();
+    try {
+      event
+          .deferReply()
+          .then(
+              event.createFollowup(
+                  InteractionFollowupCreateSpec.builder()
+                      .addFile(
+                          "floor.png",
+                          new ByteArrayInputStream(floorService.getCurrentFloorImageBytes()))
+                      .addFile(
+                          "floor_usd.png",
+                          new ByteArrayInputStream(floorService.getCurrentFloorUsdImageBytes()))
+                      .addFile(
+                          "mcdonalds_application.png",
+                          new ByteArrayInputStream(
+                              new ClassPathResource("mcdonalds_application.png")
+                                  .getInputStream()
+                                  .readAllBytes()))
+                      .addEmbed(floorResponse.floorMagicEmbed)
+                      .addEmbed(floorResponse.floorUsdEmbed)
+                      .addEmbed(floorResponse.floorEmbed)
+                      .addEmbed(floorResponse.mcDonaldsEmbed)
+                      .build()))
+          .block();
 
+    } catch (Exception ex) {
+    }
     return Mono.empty();
   }
 
@@ -256,10 +282,13 @@ public class FloorCommand implements MbotCommand {
                 true)
             .build();
 
+    final var mcDonaldsEmbed =
+        EmbedCreateSpec.builder().image("attachment://mcdonalds_application.png").build();
+
     final var floorMagicEmbed = EmbedCreateSpec.builder().image("attachment://floor.png").build();
 
     final var floorUsdEmbed = EmbedCreateSpec.builder().image("attachment://floor_usd.png").build();
 
-    return new FloorResponse(floorEmbed, floorMagicEmbed, floorUsdEmbed);
+    return new FloorResponse(floorEmbed, floorMagicEmbed, floorUsdEmbed, mcDonaldsEmbed);
   }
 }
