@@ -1,0 +1,27 @@
+{
+  "name": "meme",
+  "description": "WHO KNOWS?!?",
+  "options": [
+    {
+      "name": "id",
+      "description": "Smol ID",
+      "type": 4,
+      "required": true
+    },
+    {
+      "name": "type",
+      "description": "Meme?",
+      "type": 3,
+      "choices": [
+        {
+          "name": "wagie",
+          "value": "wagie"
+        },
+        {
+          "name": "distracted",
+          "value": "distracted"
+        }
+      ]
+    }
+  ]
+}

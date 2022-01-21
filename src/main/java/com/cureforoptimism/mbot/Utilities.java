@@ -804,7 +804,11 @@ public class Utilities {
   }
 
   public BufferedImage getTransparentImage(String tokenId) throws URISyntaxException, IOException {
-    final var smolUri = new URI(getSmolImage(tokenId, SmolType.SMOL, false).orElse(""));
+    return getTransparentImage(tokenId, false);
+  }
+
+  public BufferedImage getTransparentImage(String tokenId, boolean forceSmolBrain) throws URISyntaxException, IOException {
+    final var smolUri = new URI(getSmolImage(tokenId, SmolType.SMOL, forceSmolBrain).orElse(""));
 
     var imageSmol = ImageIO.read(smolUri.toURL());
 

@@ -5,6 +5,7 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.core.spec.InteractionFollowupCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -22,6 +23,8 @@ import reactor.core.publisher.Mono;
 public class MemeCommand implements MbotCommand {
   private final Utilities utilities;
   private BufferedImage imgMeme;
+  private BufferedImage imgMcDonaldsHat;
+  private BufferedImage imgMcDonaldsBg;
 
   public MemeCommand(Utilities utilities) {
     this.utilities = utilities;
@@ -29,6 +32,10 @@ public class MemeCommand implements MbotCommand {
     try {
       imgMeme =
           ImageIO.read(new ClassPathResource("meme_distracted_boyfriend.jpg").getInputStream());
+      imgMcDonaldsHat = ImageIO.read(new ClassPathResource("mcdonalds_hat.png").getInputStream());
+      imgMcDonaldsBg =
+          ImageIO.read(new ClassPathResource("mcdonalds_background.png").getInputStream());
+
     } catch (Exception ex) {
       log.error(ex.getMessage());
       System.exit(-1);
@@ -108,6 +115,75 @@ public class MemeCommand implements MbotCommand {
 
   @Override
   public Mono<Void> handle(ChatInputInteractionEvent event) {
-    return null;
+    event.deferReply().block();
+
+    final Long id = Utilities.getOptionLong(event, "id").orElse(null);
+    final String typeStr = Utilities.getOptionString(event, "type").orElse("mcds");
+
+    if (id == null) {
+      return Mono.empty();
+    }
+
+    try {
+      ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+      BufferedImage output;
+
+      BufferedImage imageSmol;
+
+      switch (typeStr) {
+        case "distracted":
+          imageSmol =  utilities.getTransparentImage(id.toString());
+          output =
+              new BufferedImage(
+                  imgMeme.getWidth(), imgMeme.getHeight(), BufferedImage.TYPE_INT_RGB);
+          Graphics2D g = output.createGraphics();
+          g.setComposite(AlphaComposite.SrcOver);
+          g.drawImage(imgMeme, 0, 0, null);
+
+          final var r = Scalr.resize(imageSmol, 350);
+          g.drawImage(r, -130, 205, null);
+          g.dispose();
+
+          break;
+        default:
+          imageSmol =  utilities.getTransparentImage(id.toString(), true);
+          output =
+              new BufferedImage(
+                  imgMcDonaldsBg.getWidth(),
+                  imgMcDonaldsBg.getHeight(),
+                  BufferedImage.TYPE_INT_RGB);
+          Graphics2D graphics = output.createGraphics();
+          graphics.setComposite(AlphaComposite.SrcOver);
+          graphics.drawImage(imgMcDonaldsBg, 0, 0, null);
+
+          final var resized = Scalr.resize(imageSmol, 500);
+          graphics.drawImage(resized, 210, 110, null);
+          graphics.drawImage(imgMcDonaldsHat, 370, 275, null);
+          graphics.dispose();
+
+          break;
+      }
+
+      ImageIO.write(output, "jpg", outputStream);
+
+      final var embed =
+          EmbedCreateSpec.builder()
+              .title("What the Smol?!?")
+              .image("attachment://wts_" + id + ".jpg")
+              .build();
+
+      event
+          .createFollowup(
+              InteractionFollowupCreateSpec.builder()
+                  .addFile(
+                      "wts_" + id + ".jpg", new ByteArrayInputStream(outputStream.toByteArray()))
+                  .addEmbed(embed)
+                  .build())
+          .block();
+    } catch (Exception ex) {
+      log.error("Exception memeing" + ex.getMessage());
+    }
+
+    return Mono.empty();
   }
 }
