@@ -4,6 +4,7 @@ import com.cureforoptimism.mbot.discord.command.MbotCommand;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
+import discord4j.rest.http.client.ClientException;
 import java.util.Collection;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
@@ -60,7 +61,14 @@ public class MbotCommandListener {
             .block();
       }
     } catch (Exception ex) {
-      log.error("Error received in listener loop. Will resume.", ex);
+      if (ex instanceof ClientException) {
+        final var clientException = (ClientException) ex;
+        if (clientException.getStatus().code() != 403) {
+          log.error("Error received in listener loop. Will resume.", ex);
+        }
+      } else {
+        log.error("Error received in listener loop. Will resume.", ex);
+      }
     }
   }
 }
