@@ -31,6 +31,7 @@ public class FloorCommand implements MbotCommand {
   final DiscordBot discordBot;
   final FloorService floorService;
   final CoinGeckoService coinGeckoService;
+  private final Double yachtPrice = 10.0; // ETH
 
   private static class FloorResponse {
     EmbedCreateSpec floorEmbed;
@@ -146,6 +147,7 @@ public class FloorCommand implements MbotCommand {
     final var totalVroomListings = treasureService.getTotalVroomListings();
     final var bodyFloor = treasureService.getBodyFloor();
     final var usdBodyFloor = bodyFloor.multiply(BigDecimal.valueOf(currentPrice));
+    double yachtPct = 0.0;
 
     double ethMktPrice = 0.0;
     if (includeEth) {
@@ -156,6 +158,13 @@ public class FloorCommand implements MbotCommand {
       }
 
       ethMktPrice = ethMktPriceOpt.get();
+
+      final var cheapestSmol =
+          usdCheapestMale.doubleValue() < usdCheapestFemale.doubleValue()
+              ? usdCheapestMale
+              : usdCheapestFemale;
+      final Double cheapestSmolEth = cheapestSmol.doubleValue() / ethMktPrice;
+      yachtPct = (cheapestSmolEth / yachtPrice) * 100.0;
     }
 
     final SimpleTable table =
@@ -341,13 +350,20 @@ public class FloorCommand implements MbotCommand {
             cheapestVroomId,
             Utilities.simpleTableToString(table));
 
+    String title = "Smol Floor - Treasure Marketplace\nMAGIC: $" + currentPrice;
+    if (includeEth) {
+      title +=
+          "\nETH: $"
+              + ethMktPrice
+              + "\nYacht Party Goal (Ξ"
+              + String.format("%.0f", yachtPrice)
+              + "): "
+              + String.format("%.1f%%", yachtPct);
+    }
+
     EmbedCreateSpec floorEmbed =
         EmbedCreateSpec.builder()
-            .title(
-                "Smol Floor - Treasure Marketplace\nMAGIC: $"
-                    + currentPrice
-                    + "\nETH: Ξ"
-                    + ethMktPrice)
+            .title(title)
             .author(
                 "SmolBot",
                 null,
