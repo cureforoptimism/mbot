@@ -5,6 +5,7 @@ import static com.inamik.text.tables.Cell.Functions.RIGHT_ALIGN;
 
 import com.cureforoptimism.mbot.Utilities;
 import com.cureforoptimism.mbot.application.DiscordBot;
+import com.cureforoptimism.mbot.service.CoinGeckoService;
 import com.cureforoptimism.mbot.service.FloorService;
 import com.cureforoptimism.mbot.service.TreasureService;
 import com.inamik.text.tables.SimpleTable;
@@ -16,6 +17,7 @@ import discord4j.core.spec.InteractionFollowupCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -28,6 +30,7 @@ public class FloorCommand implements MbotCommand {
   final TreasureService treasureService;
   final DiscordBot discordBot;
   final FloorService floorService;
+  final CoinGeckoService coinGeckoService;
 
   private static class FloorResponse {
     EmbedCreateSpec floorEmbed;
@@ -68,7 +71,11 @@ public class FloorCommand implements MbotCommand {
         .getChannel()
         .flatMap(
             c -> {
-              FloorResponse floorResponse = getFloorMessage();
+              // TODO: true
+              FloorResponse floorResponse = getFloorMessage(true);
+              if (floorResponse == null) {
+                return Mono.empty();
+              }
 
               return c.createMessage(
                   MessageCreateSpec.builder()
@@ -90,7 +97,11 @@ public class FloorCommand implements MbotCommand {
   public Mono<Void> handle(ChatInputInteractionEvent event) {
     log.info("/floor command received");
 
-    FloorResponse floorResponse = getFloorMessage();
+    // TODO: True
+    FloorResponse floorResponse = getFloorMessage(true);
+    if (floorResponse == null) {
+      return Mono.empty();
+    }
 
     event
         .deferReply()
@@ -112,7 +123,7 @@ public class FloorCommand implements MbotCommand {
     return Mono.empty();
   }
 
-  private FloorResponse getFloorMessage() {
+  private FloorResponse getFloorMessage(boolean includeEth) {
     Double currentPrice = discordBot.getCurrentPrice();
 
     final var magicFloor = treasureService.getFloor();
@@ -136,100 +147,188 @@ public class FloorCommand implements MbotCommand {
     final var bodyFloor = treasureService.getBodyFloor();
     final var usdBodyFloor = bodyFloor.multiply(BigDecimal.valueOf(currentPrice));
 
+    double ethMktPrice = 0.0;
+    if (includeEth) {
+      final Optional<Double> ethMktPriceOpt = coinGeckoService.getEthPrice();
+      if (ethMktPriceOpt.isEmpty()) {
+        // This will retry once we have an ethereum price
+        return null;
+      }
+
+      ethMktPrice = ethMktPriceOpt.get();
+    }
+
     final SimpleTable table =
         new SimpleTable()
             .nextRow()
             .nextCell("TYPE")
             .applyToCell(HORIZONTAL_CENTER.withWidth(12))
             .nextCell("MAGIC")
-            .applyToCell(HORIZONTAL_CENTER.withWidth(12))
+            .applyToCell(HORIZONTAL_CENTER.withWidth(7))
             .nextCell("USD")
             .applyToCell(HORIZONTAL_CENTER.withWidth(12));
+
+    if (includeEth) {
+      table.nextCell("ETH").applyToCell(HORIZONTAL_CENTER.withWidth(7));
+    }
 
     table
         .nextRow()
         .nextCell("SMOL")
-        .nextCell(String.format("%.2f", magicFloor))
-        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("%.00f", magicFloor))
+        .applyToCell(RIGHT_ALIGN.withWidth(7))
         .nextCell(String.format("$%.2f", usdFloor))
         .applyToCell(RIGHT_ALIGN.withWidth(12));
+
+    if (includeEth) {
+      table
+          .nextCell(String.format("Ξ%.2f", usdFloor.doubleValue() / ethMktPrice))
+          .applyToCell(RIGHT_ALIGN.withWidth(7));
+    }
 
     table
         .nextRow()
         .nextCell("SMOLBODY")
-        .nextCell(String.format("%.2f", bodyFloor))
-        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("%.00f", bodyFloor))
+        .applyToCell(RIGHT_ALIGN.withWidth(7))
         .nextCell(String.format("$%.2f", usdBodyFloor))
         .applyToCell(RIGHT_ALIGN.withWidth(12));
+
+    if (includeEth) {
+      table
+          .nextCell(String.format("Ξ%.2f", usdBodyFloor.doubleValue() / ethMktPrice))
+          .applyToCell(RIGHT_ALIGN.withWidth(7));
+    }
 
     table
         .nextRow()
         .nextCell("LAND")
-        .nextCell(String.format("%.2f", landFloor))
-        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("%.00f", landFloor))
+        .applyToCell(RIGHT_ALIGN.withWidth(7))
         .nextCell(String.format("$%.2f", usdLandFloor))
         .applyToCell(RIGHT_ALIGN.withWidth(12));
+
+    if (includeEth) {
+      table
+          .nextCell(String.format("Ξ%.2f", usdLandFloor.doubleValue() / ethMktPrice))
+          .applyToCell(RIGHT_ALIGN.withWidth(7));
+    }
 
     table
         .nextRow()
         .nextCell("MALE")
-        .nextCell(String.format("%.2f", cheapestMale))
-        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("%.00f", cheapestMale))
+        .applyToCell(RIGHT_ALIGN.withWidth(7))
         .nextCell(String.format("$%.2f", usdCheapestMale))
         .applyToCell(RIGHT_ALIGN.withWidth(12));
+
+    if (includeEth) {
+      table
+          .nextCell(String.format("Ξ%.2f", usdCheapestMale.doubleValue() / ethMktPrice))
+          .applyToCell(RIGHT_ALIGN.withWidth(7));
+    }
 
     table
         .nextRow()
         .nextCell("FEMALE")
-        .nextCell(String.format("%.2f", cheapestFemale))
-        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("%.00f", cheapestFemale))
+        .applyToCell(RIGHT_ALIGN.withWidth(7))
         .nextCell(String.format("$%.2f", usdCheapestFemale))
         .applyToCell(RIGHT_ALIGN.withWidth(12));
+
+    if (includeEth) {
+      table
+          .nextCell(String.format("Ξ%.2f", usdCheapestFemale.doubleValue() / ethMktPrice))
+          .applyToCell(RIGHT_ALIGN.withWidth(7));
+    }
 
     table
         .nextRow()
         .nextCell("VROOM")
-        .nextCell(String.format("%.2f", cheapestVroom))
-        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("%.00f", cheapestVroom))
+        .applyToCell(RIGHT_ALIGN.withWidth(7))
         .nextCell(String.format("$%.2f", usdCheapestVroom))
         .applyToCell(RIGHT_ALIGN.withWidth(12));
+
+    if (includeEth) {
+      table
+          .nextCell(String.format("Ξ%.2f", usdCheapestVroom.doubleValue() / ethMktPrice))
+          .applyToCell(RIGHT_ALIGN.withWidth(7));
+    }
 
     table
         .nextRow()
         .nextCell("PAIR")
-        .nextCell(String.format("%.2f", cheapestPair))
-        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("%.00f", cheapestPair))
+        .applyToCell(RIGHT_ALIGN.withWidth(7))
         .nextCell(String.format("$%.2f", usdCheapestPair))
         .applyToCell(RIGHT_ALIGN.withWidth(12));
+
+    if (includeEth) {
+      table
+          .nextCell(String.format("Ξ%.2f", usdCheapestPair.doubleValue() / ethMktPrice))
+          .applyToCell(RIGHT_ALIGN.withWidth(7));
+    }
 
     table
         .nextRow()
         .nextCell("PAIR+LAND")
-        .nextCell(String.format("%.2f", cheapestPair.add(landFloor)))
-        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("%.00f", cheapestPair.add(landFloor)))
+        .applyToCell(RIGHT_ALIGN.withWidth(7))
         .nextCell(String.format("$%.2f", usdCheapestPair.add(usdLandFloor)))
         .applyToCell(RIGHT_ALIGN.withWidth(12));
+
+    if (includeEth) {
+      table
+          .nextCell(
+              String.format("Ξ%.2f", usdCheapestPair.add(usdLandFloor).doubleValue() / ethMktPrice))
+          .applyToCell(RIGHT_ALIGN.withWidth(7));
+    }
 
     table
         .nextRow()
         .nextCell("PAIR+LAND+VROOM")
-        .nextCell(String.format("%.2f", cheapestPair.add(landFloor).add(cheapestVroom)))
-        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("%.00f", cheapestPair.add(landFloor).add(cheapestVroom)))
+        .applyToCell(RIGHT_ALIGN.withWidth(7))
         .nextCell(String.format("$%.2f", usdCheapestPair.add(usdLandFloor).add(usdCheapestVroom)))
         .applyToCell(RIGHT_ALIGN.withWidth(12));
+
+    if (includeEth) {
+      table
+          .nextCell(
+              String.format(
+                  "Ξ%.2f",
+                  usdCheapestPair.add(usdLandFloor).add(usdCheapestVroom).doubleValue()
+                      / ethMktPrice))
+          .applyToCell(RIGHT_ALIGN.withWidth(7));
+    }
 
     table
         .nextRow()
         .nextCell("PAIR+LAND+VROOMx2")
         .nextCell(
             String.format(
-                "%.2f", cheapestPair.add(landFloor).add(cheapestVroom).add(cheapestVroom)))
-        .applyToCell(RIGHT_ALIGN.withWidth(12))
+                "%.00f", cheapestPair.add(landFloor).add(cheapestVroom).add(cheapestVroom)))
+        .applyToCell(RIGHT_ALIGN.withWidth(7))
         .nextCell(
             String.format(
                 "$%.2f",
                 usdCheapestPair.add(usdLandFloor).add(usdCheapestVroom).add(usdCheapestVroom)))
         .applyToCell(RIGHT_ALIGN.withWidth(12));
+
+    if (includeEth) {
+      table
+          .nextCell(
+              String.format(
+                  "Ξ%.2f",
+                  usdCheapestPair
+                          .add(usdLandFloor)
+                          .add(usdCheapestVroom)
+                          .add(usdCheapestVroom)
+                          .doubleValue()
+                      / ethMktPrice))
+          .applyToCell(RIGHT_ALIGN.withWidth(7));
+    }
 
     final var output =
         String.format(
@@ -244,7 +343,11 @@ public class FloorCommand implements MbotCommand {
 
     EmbedCreateSpec floorEmbed =
         EmbedCreateSpec.builder()
-            .title("Smol Floor - Treasure Marketplace\nMAGIC: $" + currentPrice)
+            .title(
+                "Smol Floor - Treasure Marketplace\nMAGIC: $"
+                    + currentPrice
+                    + "\nETH: Ξ"
+                    + ethMktPrice)
             .author(
                 "SmolBot",
                 null,
