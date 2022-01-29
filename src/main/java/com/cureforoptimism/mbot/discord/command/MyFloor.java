@@ -17,6 +17,7 @@ import com.cureforoptimism.mbot.repository.SmolBodyRepository;
 import com.cureforoptimism.mbot.repository.SmolRepository;
 import com.cureforoptimism.mbot.repository.UserFloorRepository;
 import com.cureforoptimism.mbot.repository.VroomRepository;
+import com.cureforoptimism.mbot.service.CoinGeckoService;
 import com.cureforoptimism.mbot.service.TreasureService;
 import com.inamik.text.tables.SimpleTable;
 import com.smolbrains.SmolBodiesContract;
@@ -54,6 +55,7 @@ public class MyFloor implements MbotCommand {
   private final SmolBodiesContract smolBodiesContract;
   private final SmolBrainsVroomContract vroomContract;
   private final SmolLandContract smolLandContract;
+  private final CoinGeckoService coinGeckoService;
 
   @Override
   public String getName() {
@@ -158,6 +160,15 @@ public class MyFloor implements MbotCommand {
     final var bodyFloor = treasureService.getBodyFloor();
     final var usdBodyFloor = bodyFloor.multiply(BigDecimal.valueOf(currentPrice));
 
+    double ethMktPrice = 0.0;
+    final Optional<Double> ethMktPriceOpt = coinGeckoService.getEthPrice();
+    if (ethMktPriceOpt.isEmpty()) {
+      // This will retry once we have an ethereum price
+      return null;
+    }
+
+    ethMktPrice = ethMktPriceOpt.get();
+
     BigDecimal totalMagic = BigDecimal.ZERO;
     BigDecimal totalUsd = BigDecimal.ZERO;
 
@@ -168,9 +179,12 @@ public class MyFloor implements MbotCommand {
             .nextCell("TYPE")
             .applyToCell(HORIZONTAL_CENTER.withWidth(12))
             .nextCell("MAGIC")
-            .applyToCell(HORIZONTAL_CENTER.withWidth(12))
+            .applyToCell(HORIZONTAL_CENTER.withWidth(7))
             .nextCell("USD")
-            .applyToCell(HORIZONTAL_CENTER.withWidth(12));
+            .applyToCell(HORIZONTAL_CENTER.withWidth(12))
+            .nextCell("ETH")
+            .applyToCell(HORIZONTAL_CENTER.withWidth(7));
+
     if (!smols.isEmpty()) {
       int numMales = 0;
       int numLadies = 0;
@@ -202,11 +216,13 @@ public class MyFloor implements MbotCommand {
         table
             .nextRow()
             .nextCell("SMOL MALE" + (numMales > 1 ? "x" + numMales : ""))
-            .nextCell(String.format("%.2f", cheapestMale.multiply(BigDecimal.valueOf(numMales))))
-            .applyToCell(RIGHT_ALIGN.withWidth(12))
+            .nextCell(String.format("%.00f", cheapestMale.multiply(BigDecimal.valueOf(numMales))))
+            .applyToCell(RIGHT_ALIGN.withWidth(7))
             .nextCell(
                 String.format("$%.2f", usdCheapestMale.multiply(BigDecimal.valueOf(numMales))))
-            .applyToCell(RIGHT_ALIGN.withWidth(12));
+            .applyToCell(RIGHT_ALIGN.withWidth(12))
+            .nextCell(String.format("Ξ%.2f", usdCheapestMale.doubleValue() / ethMktPrice))
+            .applyToCell(RIGHT_ALIGN.withWidth(7));
       }
 
       if (numLadies > 0) {
@@ -216,11 +232,14 @@ public class MyFloor implements MbotCommand {
         table
             .nextRow()
             .nextCell("SMOL LADY" + (numLadies > 1 ? "x" + numLadies : ""))
-            .nextCell(String.format("%.2f", cheapestFemale.multiply(BigDecimal.valueOf(numLadies))))
-            .applyToCell(RIGHT_ALIGN.withWidth(12))
+            .nextCell(
+                String.format("%.00f", cheapestFemale.multiply(BigDecimal.valueOf(numLadies))))
+            .applyToCell(RIGHT_ALIGN.withWidth(7))
             .nextCell(
                 String.format("$%.2f", usdCheapestFemale.multiply(BigDecimal.valueOf(numLadies))))
-            .applyToCell(RIGHT_ALIGN.withWidth(12));
+            .applyToCell(RIGHT_ALIGN.withWidth(12))
+            .nextCell(String.format("Ξ%.2f", usdCheapestFemale.doubleValue() / ethMktPrice))
+            .applyToCell(RIGHT_ALIGN.withWidth(7));
       }
     }
 
@@ -232,10 +251,12 @@ public class MyFloor implements MbotCommand {
       table
           .nextRow()
           .nextCell("SMOLBODY" + (numSwols > 1 ? "x" + numSwols : ""))
-          .nextCell(String.format("%.2f", bodyFloor.multiply(BigDecimal.valueOf(numSwols))))
-          .applyToCell(RIGHT_ALIGN.withWidth(12))
+          .nextCell(String.format("%.00f", bodyFloor.multiply(BigDecimal.valueOf(numSwols))))
+          .applyToCell(RIGHT_ALIGN.withWidth(7))
           .nextCell(String.format("$%.2f", usdBodyFloor.multiply(BigDecimal.valueOf(numSwols))))
-          .applyToCell(RIGHT_ALIGN.withWidth(12));
+          .applyToCell(RIGHT_ALIGN.withWidth(12))
+          .nextCell(String.format("Ξ%.2f", usdBodyFloor.doubleValue() / ethMktPrice))
+          .applyToCell(RIGHT_ALIGN.withWidth(7));
 
       if (!header.isEmpty()) {
         header.append("\n");
@@ -252,10 +273,12 @@ public class MyFloor implements MbotCommand {
       table
           .nextRow()
           .nextCell("LAND" + (numLands > 1 ? "x" + numLands : ""))
-          .nextCell(String.format("%.2f", landFloor.multiply(BigDecimal.valueOf(numLands))))
-          .applyToCell(RIGHT_ALIGN.withWidth(12))
+          .nextCell(String.format("%.00f", landFloor.multiply(BigDecimal.valueOf(numLands))))
+          .applyToCell(RIGHT_ALIGN.withWidth(7))
           .nextCell(String.format("$%.2f", usdLandFloor.multiply(BigDecimal.valueOf(numLands))))
-          .applyToCell(RIGHT_ALIGN.withWidth(12));
+          .applyToCell(RIGHT_ALIGN.withWidth(12))
+          .nextCell(String.format("Ξ%.2f", usdLandFloor.doubleValue() / ethMktPrice))
+          .applyToCell(RIGHT_ALIGN.withWidth(7));
 
       if (!header.isEmpty()) {
         header.append("\n");
@@ -272,11 +295,13 @@ public class MyFloor implements MbotCommand {
       table
           .nextRow()
           .nextCell("VROOM" + (numVrooms > 1 ? "x" + numVrooms : ""))
-          .nextCell(String.format("%.2f", cheapestVroom.multiply(BigDecimal.valueOf(numVrooms))))
-          .applyToCell(RIGHT_ALIGN.withWidth(12))
+          .nextCell(String.format("%.00f", cheapestVroom.multiply(BigDecimal.valueOf(numVrooms))))
+          .applyToCell(RIGHT_ALIGN.withWidth(7))
           .nextCell(
               String.format("$%.2f", usdCheapestVroom.multiply(BigDecimal.valueOf(numVrooms))))
-          .applyToCell(RIGHT_ALIGN.withWidth(12));
+          .applyToCell(RIGHT_ALIGN.withWidth(12))
+          .nextCell(String.format("Ξ%.2f", usdCheapestVroom.doubleValue() / ethMktPrice))
+          .applyToCell(RIGHT_ALIGN.withWidth(7));
 
       if (!header.isEmpty()) {
         header.append("\n");
@@ -288,10 +313,12 @@ public class MyFloor implements MbotCommand {
     table
         .nextRow()
         .nextCell("TOTAL")
-        .nextCell(String.format("%.2f", totalMagic))
-        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("%.00f", totalMagic))
+        .applyToCell(RIGHT_ALIGN.withWidth(7))
         .nextCell(String.format("$%.2f", totalUsd))
-        .applyToCell(RIGHT_ALIGN.withWidth(12));
+        .applyToCell(RIGHT_ALIGN.withWidth(12))
+        .nextCell(String.format("Ξ%.2f", totalUsd.doubleValue() / ethMktPrice))
+        .applyToCell(RIGHT_ALIGN.withWidth(7));
 
     final var output = "```\n" + Utilities.simpleTableToString(table) + "```";
 
