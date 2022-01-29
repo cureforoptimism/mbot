@@ -45,6 +45,8 @@ import java.awt.image.RGBImageFilter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.math.BigInteger;
 import java.net.URI;
@@ -70,8 +72,11 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.imageio.ImageIO;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
 import org.json.JSONObject;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -282,7 +287,7 @@ public class Utilities {
                       + id
                       + "\nRANK: #"
                       + rarityRank.getRank()
-                      + " (Unofficial)\nIQ: "
+                      + " (Official)\nIQ: "
                       + treasureService.getIq(smolId))
               .author(
                   "SmolBot",
@@ -292,10 +297,7 @@ public class Utilities {
                   getSmolImage(id, SmolType.SMOL, false)
                       .orElse("")) // Hardcoded to 0 brain size, for now
               .description(output.toString())
-              .addField(
-                  "Notes",
-                  "Ranking (and name, and birthday) is unofficial. Smols with unique traits are weighted the highest. Traits that occur < %0.65 are weighted 2nd highest, %0.80 third highest",
-                  true)
+              .addField("Notes", "Rankings are official, and match https://treasure.tools/", true)
               .build());
     } catch (Exception ex) {
       log.error("Error retrieving smol", ex);
@@ -355,7 +357,7 @@ public class Utilities {
     try {
       return Optional.of(
           EmbedCreateSpec.builder()
-              .title("SMOLBODIES #" + id + "\nRANK: #" + rarityRank.getRank() + " (WIP)")
+              .title("SMOLBODIES #" + id + "\nRANK: #" + rarityRank.getRank() + " (Official)")
               .author(
                   "SmolBot",
                   null,
@@ -365,9 +367,7 @@ public class Utilities {
                       .orElse("")) // Hardcoded to 0 brain size, for now
               .description(output.toString())
               .addField(
-                  "Ranking Notes",
-                  "Ranking is unofficial. SmolBodies with unique traits are weighted the highest. Traits that occur < %2.10 are weighted 2nd highest, %3.00 third highest",
-                  true)
+                  "Ranking Notes", "Rankings are official, and match https://treasure.tools/", true)
               .build());
     } catch (Exception ex) {
       log.error("Error retrieving smol", ex);
@@ -425,7 +425,7 @@ public class Utilities {
     try {
       return Optional.of(
           EmbedCreateSpec.builder()
-              .title("VROOM #" + id + "\nRANK: # " + rarityRank.getRank() + " (WIP)")
+              .title("VROOM #" + id + "\nRANK: # " + rarityRank.getRank() + " (Official)")
               .author(
                   "SmolBot",
                   null,
@@ -433,9 +433,7 @@ public class Utilities {
               .image(img.get())
               .description(output.toString())
               .addField(
-                  "Ranking Notes",
-                  "Ranking is unofficial. Vrooms with unique traits are weighted the highest. Traits that occur < %1.50 are weighted 2nd highest, %2.50 third highest",
-                  true)
+                  "Ranking Notes", "Rankings are official, and match https://treasure.tools/", true)
               .build());
     } catch (Exception ex) {
       log.error("Error retrieving vroom", ex);
@@ -721,6 +719,45 @@ public class Utilities {
     }
 
     log.info("Finished generating vroom ranks");
+  }
+
+  @Transactional
+  /*
+  THIS IS HORRIBLE CODE AND I DON'T CARE WHO KNOWS IT
+  TODO: Replace using the same algorithms as the spreadsheet and do this programmatically instead of from CSV's
+   */
+  void generateRanksCsv() {
+    InputStream csv;
+    CSVParser parser;
+
+    try {
+      csv = new ClassPathResource("collection_smol_cars.csv").getInputStream();
+    } catch (IOException ex) {
+      log.error("Unable to read CSV", ex);
+      return;
+    }
+
+    final var x = new AtomicInteger();
+    try {
+      parser = CSVFormat.RFC4180.withFirstRecordAsHeader().parse(new InputStreamReader(csv));
+    } catch (IOException ex) {
+      log.error("Unable to parse CSV", ex);
+      return;
+    }
+
+    parser.stream()
+        .forEach(
+            r -> {
+              final var rank = r.get("nft_rank");
+              final var id = r.get("id");
+
+              vroomRarityRankRepository.save(
+                  VroomRarityRank.builder()
+                      .smolId(Long.parseLong(id))
+                      .rank(Integer.parseInt(rank))
+                      .build());
+            });
+    log.info(x.getAndIncrement() + " + saved");
   }
 
   @Transactional
