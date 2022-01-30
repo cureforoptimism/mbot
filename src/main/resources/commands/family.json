@@ -24,6 +24,10 @@
         {
           "name": "moon",
           "value": "moon"
+        },
+        {
+          "name": "intergalactic",
+          "value": "intergalactic"
         }
       ]
     },

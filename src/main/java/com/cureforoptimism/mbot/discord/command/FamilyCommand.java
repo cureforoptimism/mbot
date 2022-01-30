@@ -44,6 +44,7 @@ public class FamilyCommand implements MbotCommand {
   private BufferedImage imgGalaxy;
   private BufferedImage imgMoonSurface;
   private BufferedImage imgBackground;
+  private BufferedImage imgIntergalactic;
 
   private static class FamilyResponse {
     EmbedCreateSpec familyPhoto;
@@ -71,6 +72,8 @@ public class FamilyCommand implements MbotCommand {
       this.imgBackground = ImageIO.read(new ClassPathResource("lasers.png").getInputStream());
       this.imgMoonSurface =
           ImageIO.read(new ClassPathResource("moon_surface_bone.png").getInputStream());
+      this.imgIntergalactic =
+          ImageIO.read(new ClassPathResource("intergalactic.jpg").getInputStream());
     } catch (Exception ex) {
       log.error(ex.getMessage());
       System.exit(-1);
@@ -178,16 +181,19 @@ public class FamilyCommand implements MbotCommand {
 
   private FamilyResponse getFamilyResponse(
       String tokenId, String background, boolean forceSmolBrain) {
-    BufferedImage bgImage = this.imgMoonSurface;
+    BufferedImage bgImage = this.imgIntergalactic;
 
     if (background != null) {
       bgImage =
           switch (background) {
             case "lasers" -> this.imgBackground;
             case "galaxy" -> this.imgGalaxy;
-            default -> this.imgMoonSurface;
+            case "moon" -> this.imgMoonSurface;
+            default -> this.imgIntergalactic;
           };
     }
+
+    boolean isTwitterBanner = bgImage.equals(this.imgIntergalactic);
 
     try {
       final var address = smolBrainsContract.ownerOf(new BigInteger(tokenId)).send();
@@ -296,17 +302,39 @@ public class FamilyCommand implements MbotCommand {
 
       final var maxSmolWidths = (smolImagesTransparent.size() * 130) + 130;
 
-      BufferedImage output = new BufferedImage(maxSmolWidths, 350, BufferedImage.TYPE_INT_ARGB);
+      BufferedImage output;
+
+      if (isTwitterBanner) {
+        output = new BufferedImage(1500, 500, BufferedImage.TYPE_INT_ARGB);
+      } else {
+        output = new BufferedImage(maxSmolWidths, 350, BufferedImage.TYPE_INT_ARGB);
+      }
+
       Graphics2D graphics = output.createGraphics();
 
       graphics.setComposite(AlphaComposite.SrcOver);
-      graphics.drawImage(Scalr.resize(bgImage, Mode.FIT_EXACT, maxSmolWidths), 0, 0, null);
 
-      int xOffset = smolImages.size() * 130;
-      for (BufferedImage smolImage : smolImagesTransparent) {
-        xOffset -= 130;
-        graphics.setComposite(AlphaComposite.SrcOver);
-        graphics.drawImage(smolImage, xOffset - 40, 0, null);
+      int xOffset;
+      if (isTwitterBanner) {
+        // Assume this JPG is already 1500x500; we can resize other ones in the future, if they're
+        // not.
+        graphics.drawImage(bgImage, 0, 0, null);
+
+        xOffset = 1300;
+        for (BufferedImage smolImage : smolImagesTransparent) {
+          xOffset -= 130;
+          graphics.setComposite(AlphaComposite.SrcOver);
+          graphics.drawImage(smolImage, xOffset - 40, 150, null);
+        }
+      } else {
+        graphics.drawImage(Scalr.resize(bgImage, Mode.FIT_EXACT, maxSmolWidths), 0, 0, null);
+
+        xOffset = smolImages.size() * 130;
+        for (BufferedImage smolImage : smolImagesTransparent) {
+          xOffset -= 130;
+          graphics.setComposite(AlphaComposite.SrcOver);
+          graphics.drawImage(smolImage, xOffset - 40, 0, null);
+        }
       }
 
       ByteArrayOutputStream smolOutputStream = new ByteArrayOutputStream();
