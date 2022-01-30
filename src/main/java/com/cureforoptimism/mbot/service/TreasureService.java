@@ -421,7 +421,9 @@ public class TreasureService {
           try {
             var gender =
                 smolBrainsContract.getGender(new BigInteger(String.valueOf(tokenId))).send();
-            if (gender.intValue() == 0 && !cheapestMaleFound) {
+
+            // TODO: Remove 1944L; this is a floor hotfix
+            if (gender.intValue() == 0 && !cheapestMaleFound && tokenId != 1944L) {
               cheapestMaleFound = true;
 
               final var price = listings.getJSONObject(x).getBigInteger("pricePerItem");
