@@ -29,7 +29,7 @@
               volumes:
               - name: mbot-persistent-storage
                 persistentVolumeClaim:
-                  claimName: mbot-pv-claim
+                  claimName: nfs-discordbot-pvc
           selector:
             matchLabels:
               app: mbot
