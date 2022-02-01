@@ -534,7 +534,12 @@ public class TreasureService {
         JSONObject obj =
             new JSONObject(response.body()).getJSONObject("data").getJSONObject("collection");
 
+        // Hotfix: Skip 4547 (bugged listing)
         JSONObject firstListing = obj.getJSONArray("listings").getJSONObject(0);
+        if(firstListing.getJSONObject("token").getInt("tokenId") == 4547) {
+          firstListing = obj.getJSONArray("listings").getJSONObject(1);
+        }
+
         final var price = firstListing.getBigInteger("pricePerItem");
         this.cheapestVroom = new BigDecimal(price, 18, mc);
         this.cheapestVroomId = firstListing.getJSONObject("token").getInt("tokenId");
