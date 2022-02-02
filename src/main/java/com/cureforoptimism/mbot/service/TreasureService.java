@@ -346,20 +346,19 @@ public class TreasureService {
   @Scheduled(fixedDelay = 60000)
   public synchronized void updateLatestSales() {
     String jsonBody =
-        "{\"query\":\"{\\n  collection(id: \\\"0x6325439389e0797ab35752b4f43a14c004f22a9c\\\") {\\n  listings(first: 100, where: {status: Sold}, orderBy: blockTimestamp, orderDirection: desc) {\\n    blockTimestamp\\n    token {\\n      tokenId\\n    }\\n    buyer {\\n      id\\n    }\\n    collectionName\\n    nicePrice\\n    pricePerItem\\n    quantity\\n    tokenName\\n    totalPrice\\n    transactionLink    \\n  }\\n  }\\n}\\n\",\"variables\":null}";
+        "{\"query\":\"query getActivity($id: String!, $orderBy: Listing_orderBy!) {\\n  listings(\\n    where: {status: Sold, collection: $id}\\n    orderBy: $orderBy\\n    orderDirection: desc\\n  ) {\\n    ...ListingFields\\n  }\\n}\\n\\nfragment ListingFields on Listing {\\n  blockTimestamp\\n  buyer {\\n    id\\n  }\\n  id\\n  pricePerItem\\n  quantity\\n  seller {\\n    id\\n  }\\n  token {\\n    id\\n    tokenId\\n  }\\n  collection {\\n    id\\n  }\\n  transactionLink\\n}\",\"variables\":{\"id\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\",\"orderBy\":\"blockTimestamp\"},\"operationName\":\"getActivity\"}";
     try {
       HttpClient httpClient = HttpClient.newHttpClient();
       HttpRequest request =
           HttpRequest.newBuilder(
-                  new URI("https://api.thegraph.com/subgraphs/name/wyze/treasure-marketplace"))
+                  new URI("https://api.thegraph.com/subgraphs/name/treasureproject/marketplace"))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .header("Content-Type", "application/json")
               .build();
 
       HttpResponse<String> response =
           httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-      JSONObject obj =
-          new JSONObject(response.body()).getJSONObject("data").getJSONObject("collection");
+      JSONObject obj = new JSONObject(response.body()).getJSONObject("data");
       JSONArray listings = obj.getJSONArray("listings");
 
       MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
@@ -536,7 +535,7 @@ public class TreasureService {
 
         // Hotfix: Skip 4547 (bugged listing)
         JSONObject firstListing = obj.getJSONArray("listings").getJSONObject(0);
-        if(firstListing.getJSONObject("token").getInt("tokenId") == 4547) {
+        if (firstListing.getJSONObject("token").getInt("tokenId") == 4547) {
           firstListing = obj.getJSONArray("listings").getJSONObject(1);
         }
 
