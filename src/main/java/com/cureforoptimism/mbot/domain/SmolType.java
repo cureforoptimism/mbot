@@ -5,5 +5,6 @@ public enum SmolType {
   VROOM,
   SMOL_BODY,
   LAND,
-  FAMILY
+  FAMILY,
+  PET
 }

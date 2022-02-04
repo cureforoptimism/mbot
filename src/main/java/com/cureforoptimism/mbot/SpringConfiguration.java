@@ -3,6 +3,7 @@ package com.cureforoptimism.mbot;
 import com.cureforoptimism.mbot.service.TokenService;
 import com.litesoftwares.coingecko.CoinGeckoApiClient;
 import com.litesoftwares.coingecko.impl.CoinGeckoApiClientImpl;
+import com.smolbrains.PetsContract;
 import com.smolbrains.SmolBodiesContract;
 import com.smolbrains.SmolBrainsContract;
 import com.smolbrains.SmolBrainsRocketContract;
@@ -132,6 +133,26 @@ public class SpringConfiguration {
       Credentials dummyCredentials = Credentials.create(Keys.createEcKeyPair());
       return SmolLandContract.load(
           "0xd666d1cc3102cd03e07794a61e5f4333b4239f53",
+          web3j(),
+          dummyCredentials,
+          contractGasProvider);
+
+    } catch (InvalidAlgorithmParameterException
+        | NoSuchAlgorithmException
+        | NoSuchProviderException ex) {
+      log.error("unable to create dummy credentials", ex);
+      return null;
+    }
+  }
+
+  @Bean
+  public PetsContract petsContract() {
+    ContractGasProvider contractGasProvider = new DefaultGasProvider();
+
+    try {
+      Credentials dummyCredentials = Credentials.create(Keys.createEcKeyPair());
+      return PetsContract.load(
+          "0xF6Cc57C45CE730496b4d3Df36b9A4E4C3a1B9754",
           web3j(),
           dummyCredentials,
           contractGasProvider);

@@ -1,13 +1,26 @@
 package com.cureforoptimism.mbot.service;
 
-import static com.cureforoptimism.mbot.Constants.*;
+import static com.cureforoptimism.mbot.Constants.SMOL_BODY_HIGHEST_ID;
+import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
+import static com.cureforoptimism.mbot.Constants.SMOL_VROOM_TOTAL_SUPPLY;
 
-import com.cureforoptimism.mbot.domain.*;
+import com.cureforoptimism.mbot.Constants;
+import com.cureforoptimism.mbot.domain.Pet;
+import com.cureforoptimism.mbot.domain.PetTrait;
+import com.cureforoptimism.mbot.domain.Smol;
+import com.cureforoptimism.mbot.domain.SmolBody;
+import com.cureforoptimism.mbot.domain.SmolBodyTrait;
+import com.cureforoptimism.mbot.domain.SmolSale;
+import com.cureforoptimism.mbot.domain.SmolType;
+import com.cureforoptimism.mbot.domain.Trait;
+import com.cureforoptimism.mbot.domain.VroomTrait;
+import com.cureforoptimism.mbot.repository.PetRepository;
 import com.cureforoptimism.mbot.repository.SmolBodyRepository;
 import com.cureforoptimism.mbot.repository.SmolRepository;
 import com.cureforoptimism.mbot.repository.SmolSalesRepository;
 import com.cureforoptimism.mbot.repository.VroomTraitsRepository;
 import com.madgag.gif.fmsware.AnimatedGifEncoder;
+import com.smolbrains.PetsContract;
 import com.smolbrains.SmolBodiesContract;
 import com.smolbrains.SmolBrainsContract;
 import com.smolbrains.SmolBrainsVroomContract;
@@ -25,7 +38,13 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.imageio.ImageIO;
 import javax.transaction.Transactional;
 import lombok.Getter;
@@ -59,6 +78,8 @@ public class TreasureService {
   final VroomTraitsRepository vroomTraitsRepository;
   final FloorService floorService;
   final SmolSalesRepository smolSalesRepository;
+  final PetRepository petRepository;
+  final PetsContract petsContract;
 
   public TreasureService(
       SmolBrainsContract smolBrainsContract,
@@ -68,7 +89,9 @@ public class TreasureService {
       SmolBodiesContract smolBodiesContract,
       SmolBodyRepository smolBodyRepository,
       FloorService floorService,
-      SmolSalesRepository smolSalesRepository) {
+      SmolSalesRepository smolSalesRepository,
+      PetRepository petRepository,
+      PetsContract petsContract) {
     this.smolBrainsContract = smolBrainsContract;
     this.smolBrainsVroomContract = smolBrainsVroomContract;
     this.vroomTraitsRepository = vroomTraitsRepository;
@@ -77,6 +100,8 @@ public class TreasureService {
     this.smolBodyRepository = smolBodyRepository;
     this.floorService = floorService;
     this.smolSalesRepository = smolSalesRepository;
+    this.petRepository = petRepository;
+    this.petsContract = petsContract;
   }
 
   public BigDecimal getIq(int tokenId) {
@@ -250,6 +275,62 @@ public class TreasureService {
       }
     } catch (Exception e) {
       log.error("Error retrieving vroom rarity stats");
+    }
+  }
+
+  @Transactional
+  public void getAllPetsRarities() {
+    try {
+      String baseUri = petsContract.baseURI().send();
+      baseUri = baseUri.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/");
+      HttpClient httpClient = HttpClient.newHttpClient();
+      final Map<String, Map<String, Integer>> rarityMap = new HashMap<>();
+
+      for (int x = 0; x <= Constants.PET_HIGHEST_ID; x++) {
+        if (petRepository.existsById((long) x)) {
+          continue;
+        }
+
+        Set<PetTrait> traits = new HashSet<>();
+
+        HttpRequest request =
+            HttpRequest.newBuilder().uri(new URI(baseUri + x + ".json")).GET().build(); // TODO
+
+        var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        while (response.statusCode() != 200) {
+          log.info("Error retrieving token; will try again (token id: " + x + ")");
+          Thread.sleep(1000L);
+          response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        }
+
+        JSONArray attributes = new JSONObject(response.body()).getJSONArray("attributes");
+        for (int y = 0; y < attributes.length(); y++) {
+          JSONObject obj = attributes.getJSONObject(y);
+          String trait = obj.getString("trait_type");
+          String value = obj.get("value").toString();
+
+          traits.add(
+              PetTrait.builder()
+                  .type(trait)
+                  .value(value)
+                  .pet(Pet.builder().id((long) x).build())
+                  .build());
+
+          if (!rarityMap.containsKey(trait)) {
+            rarityMap.put(trait, new HashMap<>());
+          }
+
+          rarityMap.get(trait).merge(value, 1, Integer::sum);
+        }
+
+        if (x % 100 == 0) {
+          log.info("Rarities: " + x + " (" + Constants.PET_HIGHEST_ID + ")");
+        }
+
+        petRepository.save(Pet.builder().id((long) x).traits(traits).build()); // TODO
+      }
+    } catch (Exception e) {
+      log.error("Error retrieving pet rarity stats");
     }
   }
 

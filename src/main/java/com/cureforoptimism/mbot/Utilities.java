@@ -1,11 +1,13 @@
 package com.cureforoptimism.mbot;
 
+import static com.cureforoptimism.mbot.Constants.PET_TOTAL_SUPPLY;
 import static com.cureforoptimism.mbot.Constants.SMOL_BODY_HIGHEST_ID;
 import static com.cureforoptimism.mbot.Constants.SMOL_BODY_TOTAL_SUPPLY;
 import static com.cureforoptimism.mbot.Constants.SMOL_HIGHEST_ID;
 import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
 import static com.cureforoptimism.mbot.Constants.SMOL_VROOM_TOTAL_SUPPLY;
 
+import com.cureforoptimism.mbot.domain.PetTrait;
 import com.cureforoptimism.mbot.domain.RarityRank;
 import com.cureforoptimism.mbot.domain.Smol;
 import com.cureforoptimism.mbot.domain.SmolBodyRarityRank;
@@ -14,6 +16,7 @@ import com.cureforoptimism.mbot.domain.SmolType;
 import com.cureforoptimism.mbot.domain.Trait;
 import com.cureforoptimism.mbot.domain.VroomRarityRank;
 import com.cureforoptimism.mbot.domain.VroomTrait;
+import com.cureforoptimism.mbot.repository.PetTraitsRepository;
 import com.cureforoptimism.mbot.repository.RarityRankRepository;
 import com.cureforoptimism.mbot.repository.SmolBodyRarityRankRepository;
 import com.cureforoptimism.mbot.repository.SmolBodyTraitsRepository;
@@ -26,6 +29,7 @@ import com.inamik.text.tables.GridTable;
 import com.inamik.text.tables.SimpleTable;
 import com.inamik.text.tables.grid.Border;
 import com.inamik.text.tables.grid.Util;
+import com.smolbrains.PetsContract;
 import com.smolbrains.SmolBodiesContract;
 import com.smolbrains.SmolBrainsContract;
 import com.smolbrains.SmolBrainsRocketContract;
@@ -90,12 +94,14 @@ public class Utilities {
   private final TraitsRepository traitsRepository;
   private final VroomTraitsRepository vroomTraitsRepository;
   private final SmolBodyTraitsRepository smolBodyTraitsRepository;
+  private final PetTraitsRepository petTraitsRepository;
   private final SmolBrainsVroomContract smolBrainsVroomContract;
   private final SmolBrainsContract smolBrainsContract;
   private final VroomRarityRankRepository vroomRarityRankRepository;
   private final SmolBodyRarityRankRepository smolBodyRarityRankRepository;
   private final SmolBrainsRocketContract smolBrainsRocketContract;
   private final SmolRepository smolRepository;
+  private final PetsContract petContract;
   private String smolBaseUri;
   private String vroomBaseUri;
   private String smolBodyBaseUri;
@@ -112,7 +118,9 @@ public class Utilities {
       SmolBodyRarityRankRepository smolBodyRarityRankRepository,
       SmolBodiesContract smolBodiesContract,
       SmolBrainsRocketContract smolBrainsRocketContract,
-      SmolRepository smolRepository) {
+      SmolRepository smolRepository,
+      PetTraitsRepository petTraitsRepository,
+      PetsContract petContract) {
     this.treasureService = treasureService;
     this.rarityRankRepository = rarityRankRepository;
     this.traitsRepository = traitsRepository;
@@ -124,6 +132,8 @@ public class Utilities {
     this.smolBrainsContract = smolBrainsContract;
     this.smolBrainsRocketContract = smolBrainsRocketContract;
     this.smolRepository = smolRepository;
+    this.petTraitsRepository = petTraitsRepository;
+    this.petContract = petContract;
 
     try {
       this.smolBaseUri = smolBrainsContract.baseURI().send();
@@ -301,6 +311,69 @@ public class Utilities {
               .build());
     } catch (Exception ex) {
       log.error("Error retrieving smol", ex);
+    }
+
+    return Optional.empty();
+  }
+
+  public Optional<EmbedCreateSpec> getPetEmbed(String id) {
+    StringBuilder output = new StringBuilder();
+    long petLongId;
+
+    try {
+      petLongId = Long.parseLong(id);
+    } catch (NumberFormatException ex) {
+      return Optional.empty();
+    }
+
+    List<PetTrait> traits = petTraitsRepository.findByPet_Id(petLongId);
+    //    SmolBodyRarityRank rarityRank = smolBodyRarityRankRepository.findBySmolBodyId(smolLongId);
+
+    output.append("Number of traits: ").append(traits.size()).append("\n\n");
+
+    Map<String, Double> percentages = new TreeMap<>();
+    for (PetTrait trait : traits) {
+      percentages.put(
+          trait.getType() + " - " + trait.getValue(),
+          getPetTraitRarity(trait.getType(), trait.getValue()));
+    }
+
+    final var sorted =
+        percentages.entrySet().stream().sorted(Map.Entry.comparingByValue()).toList();
+    for (Map.Entry<String, Double> entry : sorted) {
+      // TODO: If we want to; I need to catalog this first
+      String marker = "";
+      if (entry.getValue() < 0.016d) {
+        marker = " (Unique)";
+      } else if (entry.getValue() < 0.21d) {
+        marker = " (Ultra rare)";
+      } else if (entry.getValue() < 0.30d) {
+        marker = " (Rare)";
+      }
+
+      output
+          .append(entry.getKey())
+          .append(" ")
+          .append(String.format("(%.3f%%)", entry.getValue()))
+          .append(marker)
+          .append("\n");
+    }
+
+    try {
+      return Optional.of(
+          EmbedCreateSpec.builder()
+              .title("PET #" + id)
+              .author(
+                  "SmolBot",
+                  null,
+                  "https://pbs.twimg.com/media/FKqCFEbWYAAZDwF?format=png&name=360x360")
+              .image(
+                  getSmolImage(id, SmolType.PET, true)
+                      .orElse("")) // Hardcoded to 0 brain size, for now
+              .description(output.toString())
+              .build());
+    } catch (Exception ex) {
+      log.error("Error retrieving pet", ex);
     }
 
     return Optional.empty();
@@ -524,6 +597,15 @@ public class Utilities {
 
   // TODO: Get rid of this forceSmolBrains arg ASAP (adjust santa command)
   public Optional<String> getSmolImage(String id, SmolType smolType, boolean forceSmolBrain) {
+    // SPECIAL CASE: All pets seem to live under the same IPFS bucket, hardcoded here. We can just
+    // return this gif for now (until we can't).
+    if (smolType == SmolType.PET) {
+      return Optional.of(
+          "https://gateway.pinata.cloud/ipfs/QmdRyjjv6suTcS9E1aNnKRhvL2McYynrzLbg5VwXH8cCQB/"
+              + id
+              + ".gif");
+    }
+
     try {
       HttpClient httpClient = HttpClient.newHttpClient();
       HttpRequest request =
@@ -556,6 +638,11 @@ public class Utilities {
     }
 
     return Optional.empty();
+  }
+
+  public double getPetTraitRarity(String type, String value) {
+    long count = petTraitsRepository.countByTypeIgnoreCaseAndValueIgnoreCase(type, value);
+    return ((double) count / (double) PET_TOTAL_SUPPLY) * 100.0d;
   }
 
   public double getSmolBodyTraitRarity(String type, String value) {
