@@ -7,12 +7,14 @@ import static com.inamik.text.tables.Cell.Functions.RIGHT_ALIGN;
 import com.cureforoptimism.mbot.Utilities;
 import com.cureforoptimism.mbot.application.DiscordBot;
 import com.cureforoptimism.mbot.domain.Land;
+import com.cureforoptimism.mbot.domain.Pet;
 import com.cureforoptimism.mbot.domain.Smol;
 import com.cureforoptimism.mbot.domain.SmolBody;
 import com.cureforoptimism.mbot.domain.SmolType;
 import com.cureforoptimism.mbot.domain.UserFloor;
 import com.cureforoptimism.mbot.domain.Vroom;
 import com.cureforoptimism.mbot.repository.LandRepository;
+import com.cureforoptimism.mbot.repository.PetRepository;
 import com.cureforoptimism.mbot.repository.SmolBodyRepository;
 import com.cureforoptimism.mbot.repository.SmolRepository;
 import com.cureforoptimism.mbot.repository.UserFloorRepository;
@@ -20,6 +22,7 @@ import com.cureforoptimism.mbot.repository.VroomRepository;
 import com.cureforoptimism.mbot.service.CoinGeckoService;
 import com.cureforoptimism.mbot.service.TreasureService;
 import com.inamik.text.tables.SimpleTable;
+import com.smolbrains.PetsContract;
 import com.smolbrains.SmolBodiesContract;
 import com.smolbrains.SmolBrainsContract;
 import com.smolbrains.SmolBrainsVroomContract;
@@ -56,6 +59,8 @@ public class MyFloor implements MbotCommand {
   private final SmolBrainsVroomContract vroomContract;
   private final SmolLandContract smolLandContract;
   private final CoinGeckoService coinGeckoService;
+  private final PetsContract petsContract;
+  private final PetRepository petRepository;
 
   @Override
   public String getName() {
@@ -147,6 +152,11 @@ public class MyFloor implements MbotCommand {
             .map(v -> landRepository.findById(v.longValue()).get())
             .collect(Collectors.toSet());
 
+    final Set<Pet> pets =
+        existingFloor.getPets().stream()
+            .map(v -> petRepository.findById(v.longValue()).get())
+            .collect(Collectors.toSet());
+
     Double currentPrice = discordBot.getCurrentPrice();
 
     final var landFloor = treasureService.getLandFloor();
@@ -159,8 +169,10 @@ public class MyFloor implements MbotCommand {
     final var usdCheapestVroom = cheapestVroom.multiply(BigDecimal.valueOf(currentPrice));
     final var bodyFloor = treasureService.getBodyFloor();
     final var usdBodyFloor = bodyFloor.multiply(BigDecimal.valueOf(currentPrice));
+    final var petFloor = treasureService.getPetFloor();
+    final var usdPetFloor = petFloor.multiply(BigDecimal.valueOf(currentPrice));
 
-    double ethMktPrice = 0.0;
+    double ethMktPrice;
     final Optional<Double> ethMktPriceOpt = coinGeckoService.getEthPrice();
     if (ethMktPriceOpt.isEmpty()) {
       // This will retry once we have an ethereum price
@@ -328,6 +340,31 @@ public class MyFloor implements MbotCommand {
       vrooms.forEach(s -> header.append("#").append(s.getId()).append(" "));
     }
 
+    if (!pets.isEmpty()) {
+      int numPets = vrooms.size();
+      totalMagic = totalMagic.add(petFloor.multiply(BigDecimal.valueOf(numPets)));
+      totalUsd = totalUsd.add(petFloor.multiply(BigDecimal.valueOf(numPets)));
+
+      table
+          .nextRow()
+          .nextCell("SMOLPET" + (numPets > 1 ? "x" + numPets : ""))
+          .nextCell(String.format("%.00f", petFloor.multiply(BigDecimal.valueOf(numPets))))
+          .applyToCell(RIGHT_ALIGN.withWidth(7))
+          .nextCell(String.format("$%.2f", usdPetFloor.multiply(BigDecimal.valueOf(numPets))))
+          .applyToCell(RIGHT_ALIGN.withWidth(12))
+          .nextCell(
+              String.format(
+                  "Ξ%.2f",
+                  usdPetFloor.multiply(BigDecimal.valueOf(numPets)).doubleValue() / ethMktPrice))
+          .applyToCell(RIGHT_ALIGN.withWidth(7));
+
+      if (!header.isEmpty()) {
+        header.append("\n");
+      }
+      header.append("PETS: ");
+      vrooms.forEach(s -> header.append("#").append(s.getId()).append(" "));
+    }
+
     table
         .nextRow()
         .nextCell("TOTAL")
@@ -406,6 +443,13 @@ public class MyFloor implements MbotCommand {
           existingFloor.getLand().remove(id);
         } else {
           existingFloor.getLand().add(id);
+        }
+        break;
+      case PET:
+        if (remove) {
+          existingFloor.getPets().remove(id);
+        } else {
+          existingFloor.getPets().add(id);
         }
         break;
       case FAMILY:
@@ -497,6 +541,29 @@ public class MyFloor implements MbotCommand {
                           .longValue());
             }
           }
+
+          // Pets
+          final BigInteger petBalance = petsContract.balanceOf(address).send();
+
+          for (int x = 0; x < petBalance.intValue(); x++) {
+            if (remove) {
+              existingFloor
+                  .getPets()
+                  .remove(
+                      petsContract
+                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
+                          .send()
+                          .longValue());
+            } else {
+              existingFloor
+                  .getPets()
+                  .add(
+                      petsContract
+                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
+                          .send()
+                          .longValue());
+            }
+          }
         } catch (Exception e) {
           e.printStackTrace();
           return Optional.empty();
@@ -512,6 +579,7 @@ public class MyFloor implements MbotCommand {
       case "vroom" -> VROOM;
       case "land" -> SmolType.LAND;
       case "family" -> SmolType.FAMILY;
+      case "smolpet" -> SmolType.PET;
       default -> SmolType.SMOL;
     };
   }

@@ -49,4 +49,9 @@ public class UserFloor {
   @ElementCollection
   @Getter
   Set<Long> land;
+
+  @Fetch(FetchMode.JOIN)
+  @ElementCollection
+  @Getter
+  Set<Long> pets;
 }
