@@ -345,9 +345,9 @@ public class Utilities {
       String marker = "";
       if (entry.getValue() < 0.016d) {
         marker = " (Unique)";
-      } else if (entry.getValue() < 0.21d) {
+      } else if (entry.getValue() < 1.0d) {
         marker = " (Ultra rare)";
-      } else if (entry.getValue() < 0.30d) {
+      } else if (entry.getValue() < 3.0d) {
         marker = " (Rare)";
       }
 
