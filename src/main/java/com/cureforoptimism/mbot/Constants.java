@@ -6,4 +6,6 @@ public class Constants {
   public static final int SMOL_VROOM_TOTAL_SUPPLY = 9569; // does not include 0 (no 0 for Vrooms)
   public static final int SMOL_BODY_HIGHEST_ID = 6665;
   public static final int SMOL_BODY_TOTAL_SUPPLY = 6666;
+  public static final int PET_TOTAL_SUPPLY = 15000;
+  public static final int PET_HIGHEST_ID = 14999;
 }

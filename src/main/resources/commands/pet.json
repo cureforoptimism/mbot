@@ -1,0 +1,12 @@
+{
+  "name": "pet",
+  "description": "Shows a pet picture, traits, etc...",
+  "options": [
+    {
+      "name": "id",
+      "description": "Pet ID",
+      "type": 4,
+      "required": true
+    }
+  ]
+}
