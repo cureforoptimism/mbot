@@ -70,7 +70,8 @@ public class FloorService {
       BigDecimal cheapestFemale,
       BigDecimal landFloor,
       BigDecimal cheapestVroom,
-      BigDecimal cheapestSwol) {
+      BigDecimal cheapestSwol,
+      BigDecimal cheapestPet) {
     Double magicPrice = discordBot.getCurrentPrice();
 
     if (magicPrice == null) {
@@ -86,6 +87,7 @@ public class FloorService {
             .landFloor(landFloor)
             .vroomFloor(cheapestVroom)
             .bodyFloor(cheapestSwol)
+            .petFloor(cheapestPet)
             .build());
 
     regenerateChart();

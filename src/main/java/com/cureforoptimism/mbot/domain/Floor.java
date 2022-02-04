@@ -42,6 +42,10 @@ public class Floor {
   @Getter
   BigDecimal bodyFloor;
 
+  @Column(precision = 19, scale = 10)
+  @Getter
+  BigDecimal petFloor;
+
   @CreationTimestamp
   @Temporal(TemporalType.TIMESTAMP)
   @Column(name = "create_date")

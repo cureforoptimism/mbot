@@ -73,6 +73,7 @@ public class TreasureService {
   @Getter private int cheapestFemaleId;
   @Getter private int cheapestVroomId;
   @Getter private BigDecimal bodyFloor;
+  @Getter private BigDecimal petFloor;
   final SmolRepository smolRepository;
   final SmolBodyRepository smolBodyRepository;
   final VroomTraitsRepository vroomTraitsRepository;
@@ -652,8 +653,33 @@ public class TreasureService {
         // Whatever; it'll retry
       }
 
+      // Pet (Brains) floor
+      jsonBody =
+          "{\"query\":\"query getCollectionStats($id: ID!) {\\n  collection(id: $id) {\\n    name\\n    floorPrice\\n    totalListings\\n    totalVolume\\n    listings(where: {status: Active}) {\\n      token {\\n        floorPrice\\n        tokenId\\n        name\\n      }\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0xf6cc57c45ce730496b4d3df36b9a4e4c3a1b9754\"},\"operationName\":\"getCollectionStats\"}";
+      request =
+          HttpRequest.newBuilder(
+                  new URI("https://api.thegraph.com/subgraphs/name/treasureproject/marketplace"))
+              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+              .header("Content-Type", "application/json")
+              .build();
+
+      try {
+        HttpResponse<String> response =
+            httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        JSONObject obj =
+            new JSONObject(response.body()).getJSONObject("data").getJSONObject("collection");
+
+        final var floorPrice = obj.getBigInteger("floorPrice");
+
+        MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
+        petFloor = new BigDecimal(floorPrice, 18, mc);
+      } catch (InterruptedException ex) {
+        // Whatever; it'll retry
+      }
+
       // Record data in floor table
-      floorService.addFloorPrice(cheapestMale, cheapestFemale, landFloor, cheapestVroom, bodyFloor);
+      floorService.addFloorPrice(
+          cheapestMale, cheapestFemale, landFloor, cheapestVroom, bodyFloor, petFloor);
     } catch (IOException | URISyntaxException ex) {
       log.warn("Failed to retrieve treasure: ", ex);
     }
