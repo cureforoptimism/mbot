@@ -6,6 +6,7 @@ import static com.inamik.text.tables.Cell.Functions.RIGHT_ALIGN;
 
 import com.cureforoptimism.mbot.Utilities;
 import com.cureforoptimism.mbot.application.DiscordBot;
+import com.cureforoptimism.mbot.domain.BodyPet;
 import com.cureforoptimism.mbot.domain.Land;
 import com.cureforoptimism.mbot.domain.Pet;
 import com.cureforoptimism.mbot.domain.Smol;
@@ -13,6 +14,7 @@ import com.cureforoptimism.mbot.domain.SmolBody;
 import com.cureforoptimism.mbot.domain.SmolType;
 import com.cureforoptimism.mbot.domain.UserFloor;
 import com.cureforoptimism.mbot.domain.Vroom;
+import com.cureforoptimism.mbot.repository.BodyPetRepository;
 import com.cureforoptimism.mbot.repository.LandRepository;
 import com.cureforoptimism.mbot.repository.PetRepository;
 import com.cureforoptimism.mbot.repository.SmolBodyRepository;
@@ -22,6 +24,7 @@ import com.cureforoptimism.mbot.repository.VroomRepository;
 import com.cureforoptimism.mbot.service.CoinGeckoService;
 import com.cureforoptimism.mbot.service.TreasureService;
 import com.inamik.text.tables.SimpleTable;
+import com.smolbrains.BodyPetsContact;
 import com.smolbrains.PetsContract;
 import com.smolbrains.SmolBodiesContract;
 import com.smolbrains.SmolBrainsContract;
@@ -60,7 +63,9 @@ public class MyFloor implements MbotCommand {
   private final SmolLandContract smolLandContract;
   private final CoinGeckoService coinGeckoService;
   private final PetsContract petsContract;
+  private final BodyPetsContact bodyPetsContact;
   private final PetRepository petRepository;
+  private final BodyPetRepository bodyPetRepository;
 
   @Override
   public String getName() {
@@ -157,6 +162,11 @@ public class MyFloor implements MbotCommand {
             .map(v -> petRepository.findById(v.longValue()).get())
             .collect(Collectors.toSet());
 
+    final Set<BodyPet> bodyPets =
+        existingFloor.getBodyPets().stream()
+            .map(v -> bodyPetRepository.findById(v.longValue()).get())
+            .collect(Collectors.toSet());
+
     Double currentPrice = discordBot.getCurrentPrice();
 
     final var landFloor = treasureService.getLandFloor();
@@ -171,6 +181,8 @@ public class MyFloor implements MbotCommand {
     final var usdBodyFloor = bodyFloor.multiply(BigDecimal.valueOf(currentPrice));
     final var petFloor = treasureService.getPetFloor();
     final var usdPetFloor = petFloor.multiply(BigDecimal.valueOf(currentPrice));
+    final var bodyPetFloor = treasureService.getBodyFloor();
+    final var usdBodyPetFloor = bodyPetFloor.multiply(BigDecimal.valueOf(currentPrice));
 
     double ethMktPrice;
     final Optional<Double> ethMktPriceOpt = coinGeckoService.getEthPrice();
@@ -341,7 +353,7 @@ public class MyFloor implements MbotCommand {
     }
 
     if (!pets.isEmpty()) {
-      int numPets = vrooms.size();
+      int numPets = pets.size();
       totalMagic = totalMagic.add(petFloor.multiply(BigDecimal.valueOf(numPets)));
       totalUsd = totalUsd.add(petFloor.multiply(BigDecimal.valueOf(numPets)));
 
@@ -362,7 +374,33 @@ public class MyFloor implements MbotCommand {
         header.append("\n");
       }
       header.append("PETS: ");
-      vrooms.forEach(s -> header.append("#").append(s.getId()).append(" "));
+      bodyPets.forEach(s -> header.append("#").append(s.getId()).append(" "));
+    }
+
+    if (!bodyPets.isEmpty()) {
+      int numPets = bodyPets.size();
+      totalMagic = totalMagic.add(bodyPetFloor.multiply(BigDecimal.valueOf(numPets)));
+      totalUsd = totalUsd.add(bodyPetFloor.multiply(BigDecimal.valueOf(numPets)));
+
+      table
+          .nextRow()
+          .nextCell("BODYPET" + (numPets > 1 ? "x" + numPets : ""))
+          .nextCell(String.format("%.00f", bodyPetFloor.multiply(BigDecimal.valueOf(numPets))))
+          .applyToCell(RIGHT_ALIGN.withWidth(7))
+          .nextCell(String.format("$%.2f", usdBodyPetFloor.multiply(BigDecimal.valueOf(numPets))))
+          .applyToCell(RIGHT_ALIGN.withWidth(12))
+          .nextCell(
+              String.format(
+                  "Ξ%.2f",
+                  usdBodyPetFloor.multiply(BigDecimal.valueOf(numPets)).doubleValue()
+                      / ethMktPrice))
+          .applyToCell(RIGHT_ALIGN.withWidth(7));
+
+      if (!header.isEmpty()) {
+        header.append("\n");
+      }
+      header.append("PETS: ");
+      bodyPets.forEach(s -> header.append("#").append(s.getId()).append(" "));
     }
 
     table
@@ -450,6 +488,13 @@ public class MyFloor implements MbotCommand {
           existingFloor.getPets().remove(id);
         } else {
           existingFloor.getPets().add(id);
+        }
+        break;
+      case BODY_PET:
+        if (remove) {
+          existingFloor.getBodyPets().remove(id);
+        } else {
+          existingFloor.getBodyPets().add(id);
         }
         break;
       case FAMILY:
@@ -564,6 +609,29 @@ public class MyFloor implements MbotCommand {
                           .longValue());
             }
           }
+
+          // Body Pets
+          final BigInteger bodyPetBalance = bodyPetsContact.balanceOf(address).send();
+
+          for (int x = 0; x < bodyPetBalance.intValue(); x++) {
+            if (remove) {
+              existingFloor
+                  .getPets()
+                  .remove(
+                      bodyPetsContact
+                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
+                          .send()
+                          .longValue());
+            } else {
+              existingFloor
+                  .getPets()
+                  .add(
+                      bodyPetsContact
+                          .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
+                          .send()
+                          .longValue());
+            }
+          }
         } catch (Exception e) {
           e.printStackTrace();
           return Optional.empty();
@@ -580,6 +648,7 @@ public class MyFloor implements MbotCommand {
       case "land" -> SmolType.LAND;
       case "family" -> SmolType.FAMILY;
       case "smolpet" -> SmolType.PET;
+      case "bodypet" -> SmolType.BODY_PET;
       default -> SmolType.SMOL;
     };
   }

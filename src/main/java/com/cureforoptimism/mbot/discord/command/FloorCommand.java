@@ -149,6 +149,9 @@ public class FloorCommand implements MbotCommand {
     final var usdBodyFloor = bodyFloor.multiply(BigDecimal.valueOf(currentPrice));
     final var petFloor = treasureService.getPetFloor();
     final var usdPetFloor = petFloor.multiply(BigDecimal.valueOf(currentPrice));
+    final var bodyPetFloor = treasureService.getBodyPetFloor();
+    final var usdBodyPetFloor = bodyPetFloor.multiply(BigDecimal.valueOf(currentPrice));
+
     double yachtPct = 0.0;
 
     double ethMktPrice = 0.0;
@@ -278,6 +281,20 @@ public class FloorCommand implements MbotCommand {
     if (includeEth) {
       table
           .nextCell(String.format("Ξ%.2f", usdPetFloor.doubleValue() / ethMktPrice))
+          .applyToCell(RIGHT_ALIGN.withWidth(7));
+    }
+
+    table
+        .nextRow()
+        .nextCell("BODYPET")
+        .nextCell(String.format("%.00f", bodyPetFloor))
+        .applyToCell(RIGHT_ALIGN.withWidth(7))
+        .nextCell(String.format("$%.2f", usdBodyPetFloor))
+        .applyToCell(RIGHT_ALIGN.withWidth(12));
+
+    if (includeEth) {
+      table
+          .nextCell(String.format("Ξ%.2f", usdBodyPetFloor.doubleValue() / ethMktPrice))
           .applyToCell(RIGHT_ALIGN.withWidth(7));
     }
 

@@ -5,6 +5,8 @@ import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
 import static com.cureforoptimism.mbot.Constants.SMOL_VROOM_TOTAL_SUPPLY;
 
 import com.cureforoptimism.mbot.Constants;
+import com.cureforoptimism.mbot.domain.BodyPet;
+import com.cureforoptimism.mbot.domain.BodyPetTrait;
 import com.cureforoptimism.mbot.domain.Pet;
 import com.cureforoptimism.mbot.domain.PetTrait;
 import com.cureforoptimism.mbot.domain.Smol;
@@ -14,12 +16,14 @@ import com.cureforoptimism.mbot.domain.SmolSale;
 import com.cureforoptimism.mbot.domain.SmolType;
 import com.cureforoptimism.mbot.domain.Trait;
 import com.cureforoptimism.mbot.domain.VroomTrait;
+import com.cureforoptimism.mbot.repository.BodyPetRepository;
 import com.cureforoptimism.mbot.repository.PetRepository;
 import com.cureforoptimism.mbot.repository.SmolBodyRepository;
 import com.cureforoptimism.mbot.repository.SmolRepository;
 import com.cureforoptimism.mbot.repository.SmolSalesRepository;
 import com.cureforoptimism.mbot.repository.VroomTraitsRepository;
 import com.madgag.gif.fmsware.AnimatedGifEncoder;
+import com.smolbrains.BodyPetsContact;
 import com.smolbrains.PetsContract;
 import com.smolbrains.SmolBodiesContract;
 import com.smolbrains.SmolBrainsContract;
@@ -48,6 +52,7 @@ import java.util.Set;
 import javax.imageio.ImageIO;
 import javax.transaction.Transactional;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -57,6 +62,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class TreasureService {
   private final SmolBodiesContract smolBodiesContract;
   private final SmolBrainsContract smolBrainsContract;
@@ -74,36 +80,16 @@ public class TreasureService {
   @Getter private int cheapestVroomId;
   @Getter private BigDecimal bodyFloor;
   @Getter private BigDecimal petFloor;
+  @Getter private BigDecimal bodyPetFloor;
   final SmolRepository smolRepository;
   final SmolBodyRepository smolBodyRepository;
   final VroomTraitsRepository vroomTraitsRepository;
   final FloorService floorService;
   final SmolSalesRepository smolSalesRepository;
   final PetRepository petRepository;
+  final BodyPetRepository bodyPetRepository;
   final PetsContract petsContract;
-
-  public TreasureService(
-      SmolBrainsContract smolBrainsContract,
-      SmolRepository smolRepository,
-      SmolBrainsVroomContract smolBrainsVroomContract,
-      VroomTraitsRepository vroomTraitsRepository,
-      SmolBodiesContract smolBodiesContract,
-      SmolBodyRepository smolBodyRepository,
-      FloorService floorService,
-      SmolSalesRepository smolSalesRepository,
-      PetRepository petRepository,
-      PetsContract petsContract) {
-    this.smolBrainsContract = smolBrainsContract;
-    this.smolBrainsVroomContract = smolBrainsVroomContract;
-    this.vroomTraitsRepository = vroomTraitsRepository;
-    this.smolRepository = smolRepository;
-    this.smolBodiesContract = smolBodiesContract;
-    this.smolBodyRepository = smolBodyRepository;
-    this.floorService = floorService;
-    this.smolSalesRepository = smolSalesRepository;
-    this.petRepository = petRepository;
-    this.petsContract = petsContract;
-  }
+  final BodyPetsContact bodyPetsContact;
 
   public BigDecimal getIq(int tokenId) {
     try {
@@ -276,6 +262,61 @@ public class TreasureService {
       }
     } catch (Exception e) {
       log.error("Error retrieving vroom rarity stats");
+    }
+  }
+
+  public void getAllBodyPetsRarities() {
+    try {
+      String baseUri = bodyPetsContact.baseURI().send();
+      baseUri = baseUri.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/");
+      HttpClient httpClient = HttpClient.newHttpClient();
+      final Map<String, Map<String, Integer>> rarityMap = new HashMap<>();
+
+      for (int x = 0; x <= Constants.BODY_PET_HIGHEST_ID; x++) {
+        if (bodyPetRepository.existsById((long) x)) {
+          continue;
+        }
+
+        Set<BodyPetTrait> traits = new HashSet<>();
+
+        HttpRequest request =
+            HttpRequest.newBuilder().uri(new URI(baseUri + x + ".json")).GET().build();
+
+        var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        while (response.statusCode() != 200) {
+          log.info("Error retrieving token; will try again (token id: " + x + ")");
+          Thread.sleep(1000L);
+          response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        }
+
+        JSONArray attributes = new JSONObject(response.body()).getJSONArray("attributes");
+        for (int y = 0; y < attributes.length(); y++) {
+          JSONObject obj = attributes.getJSONObject(y);
+          String trait = obj.getString("trait_type");
+          String value = obj.get("value").toString();
+
+          traits.add(
+              BodyPetTrait.builder()
+                  .type(trait)
+                  .value(value)
+                  .bodyPet(BodyPet.builder().id((long) x).build())
+                  .build());
+
+          if (!rarityMap.containsKey(trait)) {
+            rarityMap.put(trait, new HashMap<>());
+          }
+
+          rarityMap.get(trait).merge(value, 1, Integer::sum);
+        }
+
+        if (x % 100 == 0) {
+          log.info("Rarities: " + (x + 1) + " (" + Constants.BODY_PET_TOTAL_SUPPLY + ")");
+        }
+
+        bodyPetRepository.save(BodyPet.builder().id((long) x).traits(traits).build());
+      }
+    } catch (Exception e) {
+      log.error("Error retrieving body pet rarity stats");
     }
   }
 
@@ -677,9 +718,39 @@ public class TreasureService {
         // Whatever; it'll retry
       }
 
+      // Pet (Brains) floor
+      jsonBody =
+          "{\"query\":\"query getCollectionStats($id: ID!) {\\n  collection(id: $id) {\\n    name\\n    floorPrice\\n    totalListings\\n    totalVolume\\n    listings(where: {status: Active}) {\\n      token {\\n        floorPrice\\n        tokenId\\n        name\\n      }\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0xae0d0c4cc3335fd49402781e406adf3f02d41bca\"},\"operationName\":\"getCollectionStats\"}";
+      request =
+          HttpRequest.newBuilder(
+                  new URI("https://api.thegraph.com/subgraphs/name/treasureproject/marketplace"))
+              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+              .header("Content-Type", "application/json")
+              .build();
+
+      try {
+        HttpResponse<String> response =
+            httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        JSONObject obj =
+            new JSONObject(response.body()).getJSONObject("data").getJSONObject("collection");
+
+        final var floorPrice = obj.getBigInteger("floorPrice");
+
+        MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
+        bodyPetFloor = new BigDecimal(floorPrice, 18, mc);
+      } catch (InterruptedException ex) {
+        // Whatever; it'll retry
+      }
+
       // Record data in floor table
       floorService.addFloorPrice(
-          cheapestMale, cheapestFemale, landFloor, cheapestVroom, bodyFloor, petFloor);
+          cheapestMale,
+          cheapestFemale,
+          landFloor,
+          cheapestVroom,
+          bodyFloor,
+          petFloor,
+          bodyPetFloor);
     } catch (IOException | URISyntaxException ex) {
       log.warn("Failed to retrieve treasure: ", ex);
     }

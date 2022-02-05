@@ -8,4 +8,6 @@ public class Constants {
   public static final int SMOL_BODY_TOTAL_SUPPLY = 6666;
   public static final int PET_TOTAL_SUPPLY = 15000;
   public static final int PET_HIGHEST_ID = 14999;
+  public static final int BODY_PET_TOTAL_SUPPLY = 10000;
+  public static final int BODY_PET_HIGHEST_ID = 9999;
 }

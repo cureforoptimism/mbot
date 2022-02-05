@@ -1,5 +1,6 @@
 package com.cureforoptimism.mbot;
 
+import static com.cureforoptimism.mbot.Constants.BODY_PET_TOTAL_SUPPLY;
 import static com.cureforoptimism.mbot.Constants.PET_TOTAL_SUPPLY;
 import static com.cureforoptimism.mbot.Constants.SMOL_BODY_HIGHEST_ID;
 import static com.cureforoptimism.mbot.Constants.SMOL_BODY_TOTAL_SUPPLY;
@@ -7,6 +8,8 @@ import static com.cureforoptimism.mbot.Constants.SMOL_HIGHEST_ID;
 import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
 import static com.cureforoptimism.mbot.Constants.SMOL_VROOM_TOTAL_SUPPLY;
 
+import com.cureforoptimism.mbot.domain.BodyPetRarityRank;
+import com.cureforoptimism.mbot.domain.BodyPetTrait;
 import com.cureforoptimism.mbot.domain.PetTrait;
 import com.cureforoptimism.mbot.domain.RarityRank;
 import com.cureforoptimism.mbot.domain.Smol;
@@ -16,6 +19,8 @@ import com.cureforoptimism.mbot.domain.SmolType;
 import com.cureforoptimism.mbot.domain.Trait;
 import com.cureforoptimism.mbot.domain.VroomRarityRank;
 import com.cureforoptimism.mbot.domain.VroomTrait;
+import com.cureforoptimism.mbot.repository.BodyPetRarityRankRepository;
+import com.cureforoptimism.mbot.repository.BodyPetTraitsRepository;
 import com.cureforoptimism.mbot.repository.PetTraitsRepository;
 import com.cureforoptimism.mbot.repository.RarityRankRepository;
 import com.cureforoptimism.mbot.repository.SmolBodyRarityRankRepository;
@@ -29,7 +34,6 @@ import com.inamik.text.tables.GridTable;
 import com.inamik.text.tables.SimpleTable;
 import com.inamik.text.tables.grid.Border;
 import com.inamik.text.tables.grid.Util;
-import com.smolbrains.PetsContract;
 import com.smolbrains.SmolBodiesContract;
 import com.smolbrains.SmolBrainsContract;
 import com.smolbrains.SmolBrainsRocketContract;
@@ -95,13 +99,14 @@ public class Utilities {
   private final VroomTraitsRepository vroomTraitsRepository;
   private final SmolBodyTraitsRepository smolBodyTraitsRepository;
   private final PetTraitsRepository petTraitsRepository;
+  private final BodyPetTraitsRepository bodyPetTraitsRepository;
   private final SmolBrainsVroomContract smolBrainsVroomContract;
   private final SmolBrainsContract smolBrainsContract;
   private final VroomRarityRankRepository vroomRarityRankRepository;
   private final SmolBodyRarityRankRepository smolBodyRarityRankRepository;
   private final SmolBrainsRocketContract smolBrainsRocketContract;
   private final SmolRepository smolRepository;
-  private final PetsContract petContract;
+  private final BodyPetRarityRankRepository bodyPetRarityRankRepository;
   private String smolBaseUri;
   private String vroomBaseUri;
   private String smolBodyBaseUri;
@@ -120,7 +125,8 @@ public class Utilities {
       SmolBrainsRocketContract smolBrainsRocketContract,
       SmolRepository smolRepository,
       PetTraitsRepository petTraitsRepository,
-      PetsContract petContract) {
+      BodyPetTraitsRepository bodyPetTraitsRepository,
+      BodyPetRarityRankRepository bodyPetRarityRankRepository) {
     this.treasureService = treasureService;
     this.rarityRankRepository = rarityRankRepository;
     this.traitsRepository = traitsRepository;
@@ -133,7 +139,8 @@ public class Utilities {
     this.smolBrainsRocketContract = smolBrainsRocketContract;
     this.smolRepository = smolRepository;
     this.petTraitsRepository = petTraitsRepository;
-    this.petContract = petContract;
+    this.bodyPetTraitsRepository = bodyPetTraitsRepository;
+    this.bodyPetRarityRankRepository = bodyPetRarityRankRepository;
 
     try {
       this.smolBaseUri = smolBrainsContract.baseURI().send();
@@ -311,6 +318,69 @@ public class Utilities {
               .build());
     } catch (Exception ex) {
       log.error("Error retrieving smol", ex);
+    }
+
+    return Optional.empty();
+  }
+
+  public Optional<EmbedCreateSpec> getBodyPetEmbed(String id) {
+    StringBuilder output = new StringBuilder();
+    long bodyPetLongId;
+
+    try {
+      bodyPetLongId = Long.parseLong(id);
+    } catch (NumberFormatException ex) {
+      return Optional.empty();
+    }
+
+    List<BodyPetTrait> traits = bodyPetTraitsRepository.findByBodyPet_Id(bodyPetLongId);
+    //    SmolBodyRarityRank rarityRank = smolBodyRarityRankRepository.findBySmolBodyId(smolLongId);
+
+    output.append("Number of traits: ").append(traits.size()).append("\n\n");
+
+    Map<String, Double> percentages = new TreeMap<>();
+    for (BodyPetTrait trait : traits) {
+      percentages.put(
+          trait.getType() + " - " + trait.getValue(),
+          getBodyPetTraitRarity(trait.getType(), trait.getValue()));
+    }
+
+    final var sorted =
+        percentages.entrySet().stream().sorted(Map.Entry.comparingByValue()).toList();
+    for (Map.Entry<String, Double> entry : sorted) {
+      // TODO: If we want to; I need to catalog this first
+      String marker = "";
+      if (entry.getValue() < 0.016d) {
+        marker = " (Unique)";
+      } else if (entry.getValue() < 1.0d) {
+        marker = " (Ultra rare)";
+      } else if (entry.getValue() < 3.0d) {
+        marker = " (Rare)";
+      }
+
+      output
+          .append(entry.getKey())
+          .append(" ")
+          .append(String.format("(%.3f%%)", entry.getValue()))
+          .append(marker)
+          .append("\n");
+    }
+
+    try {
+      return Optional.of(
+          EmbedCreateSpec.builder()
+              .title("BODYPET #" + id)
+              .author(
+                  "SmolBot",
+                  null,
+                  "https://pbs.twimg.com/media/FKqCFEbWYAAZDwF?format=png&name=360x360")
+              .image(
+                  getSmolImage(id, SmolType.BODY_PET, true)
+                      .orElse("")) // Hardcoded to 0 brain size, for now
+              .description(output.toString())
+              .build());
+    } catch (Exception ex) {
+      log.error("Error retrieving body pet", ex);
     }
 
     return Optional.empty();
@@ -604,6 +674,11 @@ public class Utilities {
           "https://gateway.pinata.cloud/ipfs/QmdRyjjv6suTcS9E1aNnKRhvL2McYynrzLbg5VwXH8cCQB/"
               + id
               + ".gif");
+    } else if (smolType == SmolType.BODY_PET) {
+      return Optional.of(
+          "https://gateway.pinata.cloud/ipfs/Qmak8RVrMWWLEsGtTgVqUJ5a7kkouM2atjyynWT5qQCP2N/"
+              + id
+              + ".gif");
     }
 
     try {
@@ -643,6 +718,11 @@ public class Utilities {
   public double getPetTraitRarity(String type, String value) {
     long count = petTraitsRepository.countByTypeIgnoreCaseAndValueIgnoreCase(type, value);
     return ((double) count / (double) PET_TOTAL_SUPPLY) * 100.0d;
+  }
+
+  public double getBodyPetTraitRarity(String type, String value) {
+    long count = bodyPetTraitsRepository.countByTypeIgnoreCaseAndValueIgnoreCase(type, value);
+    return ((double) count / (double) BODY_PET_TOTAL_SUPPLY) * 100.0d;
   }
 
   public double getSmolBodyTraitRarity(String type, String value) {
@@ -818,7 +898,7 @@ public class Utilities {
     CSVParser parser;
 
     try {
-      csv = new ClassPathResource("collection_smol_cars.csv").getInputStream();
+      csv = new ClassPathResource("collection_body_pets.csv").getInputStream();
     } catch (IOException ex) {
       log.error("Unable to read CSV", ex);
       return;
@@ -838,9 +918,9 @@ public class Utilities {
               final var rank = r.get("nft_rank");
               final var id = r.get("id");
 
-              vroomRarityRankRepository.save(
-                  VroomRarityRank.builder()
-                      .smolId(Long.parseLong(id))
+              bodyPetRarityRankRepository.save(
+                  BodyPetRarityRank.builder()
+                      .bodyPetId(Long.parseLong(id))
                       .rank(Integer.parseInt(rank))
                       .build());
             });
