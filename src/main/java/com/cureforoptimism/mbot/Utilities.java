@@ -334,7 +334,7 @@ public class Utilities {
     }
 
     List<BodyPetTrait> traits = bodyPetTraitsRepository.findByBodyPet_Id(bodyPetLongId);
-    //    SmolBodyRarityRank rarityRank = smolBodyRarityRankRepository.findBySmolBodyId(smolLongId);
+    BodyPetRarityRank rarityRank = bodyPetRarityRankRepository.findByBodyPetId(bodyPetLongId);
 
     output.append("Number of traits: ").append(traits.size()).append("\n\n");
 
@@ -369,7 +369,7 @@ public class Utilities {
     try {
       return Optional.of(
           EmbedCreateSpec.builder()
-              .title("BODYPET #" + id)
+              .title("BODYPET #" + id + "\nRANK: #" + rarityRank.getRank() + " (Official)")
               .author(
                   "SmolBot",
                   null,
