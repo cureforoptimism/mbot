@@ -71,7 +71,8 @@ public class FloorService {
       BigDecimal landFloor,
       BigDecimal cheapestVroom,
       BigDecimal cheapestSwol,
-      BigDecimal cheapestPet) {
+      BigDecimal cheapestPet,
+      BigDecimal cheapesyBodyPet) {
     Double magicPrice = discordBot.getCurrentPrice();
 
     if (magicPrice == null) {
@@ -88,6 +89,7 @@ public class FloorService {
             .vroomFloor(cheapestVroom)
             .bodyFloor(cheapestSwol)
             .petFloor(cheapestPet)
+            .bodyPetFloor(cheapesyBodyPet)
             .build());
 
     regenerateChart();
@@ -149,7 +151,7 @@ public class FloorService {
         avgBodyFloor = avgBodyFloor.add(floor.getBodyFloor());
         avgLandFloor = avgLandFloor.add(floor.getLandFloor());
 
-        if(floor.getPetFloor() != null) {
+        if (floor.getPetFloor() != null) {
           avgPetFloor = avgPetFloor.add(floor.getPetFloor());
         }
 
@@ -161,7 +163,7 @@ public class FloorService {
         avgBodyFloorUsd = avgBodyFloorUsd.add(floor.getBodyFloor().multiply(floor.getMagicPrice()));
         avgLandFloorUsd = avgLandFloorUsd.add(floor.getLandFloor().multiply(floor.getMagicPrice()));
 
-        if(floor.getPetFloor() != null) {
+        if (floor.getPetFloor() != null) {
           avgPetFloorUsd = avgPetFloorUsd.add(floor.getPetFloor()).multiply(floor.getMagicPrice());
         }
       } else {

@@ -3,6 +3,7 @@ package com.cureforoptimism.mbot;
 import com.cureforoptimism.mbot.service.TokenService;
 import com.litesoftwares.coingecko.CoinGeckoApiClient;
 import com.litesoftwares.coingecko.impl.CoinGeckoApiClientImpl;
+import com.smolbrains.BodyPetsContact;
 import com.smolbrains.PetsContract;
 import com.smolbrains.SmolBodiesContract;
 import com.smolbrains.SmolBrainsContract;
@@ -153,6 +154,26 @@ public class SpringConfiguration {
       Credentials dummyCredentials = Credentials.create(Keys.createEcKeyPair());
       return PetsContract.load(
           "0xF6Cc57C45CE730496b4d3Df36b9A4E4C3a1B9754",
+          web3j(),
+          dummyCredentials,
+          contractGasProvider);
+
+    } catch (InvalidAlgorithmParameterException
+        | NoSuchAlgorithmException
+        | NoSuchProviderException ex) {
+      log.error("unable to create dummy credentials", ex);
+      return null;
+    }
+  }
+
+  @Bean
+  public BodyPetsContact bodyPetsContact() {
+    ContractGasProvider contractGasProvider = new DefaultGasProvider();
+
+    try {
+      Credentials dummyCredentials = Credentials.create(Keys.createEcKeyPair());
+      return BodyPetsContact.load(
+          "0xae0d0c4cc3335fd49402781e406adf3f02d41bca",
           web3j(),
           dummyCredentials,
           contractGasProvider);

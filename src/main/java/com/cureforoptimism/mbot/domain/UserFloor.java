@@ -54,4 +54,9 @@ public class UserFloor {
   @ElementCollection
   @Getter
   Set<Long> pets;
+
+  @Fetch(FetchMode.JOIN)
+  @ElementCollection
+  @Getter
+  Set<Long> bodyPets;
 }

@@ -46,6 +46,10 @@
             {
               "name": "smolpet",
               "value": "smolpet"
+            },
+            {
+              "name": "bodypet",
+              "value": "bodypet"
             }
           ]
         }
