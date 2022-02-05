@@ -181,7 +181,7 @@ public class MyFloor implements MbotCommand {
     final var usdBodyFloor = bodyFloor.multiply(BigDecimal.valueOf(currentPrice));
     final var petFloor = treasureService.getPetFloor();
     final var usdPetFloor = petFloor.multiply(BigDecimal.valueOf(currentPrice));
-    final var bodyPetFloor = treasureService.getBodyFloor();
+    final var bodyPetFloor = treasureService.getBodyPetFloor();
     final var usdBodyPetFloor = bodyPetFloor.multiply(BigDecimal.valueOf(currentPrice));
 
     double ethMktPrice;
