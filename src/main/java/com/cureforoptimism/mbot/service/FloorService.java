@@ -104,12 +104,14 @@ public class FloorService {
     Map<Date, BigDecimal> vroomFloors = new HashMap<>();
     Map<Date, BigDecimal> bodyFloors = new HashMap<>();
     Map<Date, BigDecimal> landFloors = new HashMap<>();
+    Map<Date, BigDecimal> petFloors = new HashMap<>();
 
     Map<Date, BigDecimal> maleFloorsUsd = new HashMap<>();
     Map<Date, BigDecimal> femaleFloorsUsd = new HashMap<>();
     Map<Date, BigDecimal> vroomFloorsUsd = new HashMap<>();
     Map<Date, BigDecimal> bodyFloorsUsd = new HashMap<>();
     Map<Date, BigDecimal> landFloorsUsd = new HashMap<>();
+    Map<Date, BigDecimal> petFloorsUsd = new HashMap<>();
 
     int hourlyFloors = 0;
     int lastHour = -1;
@@ -118,12 +120,14 @@ public class FloorService {
     BigDecimal avgVroomFloor = BigDecimal.ZERO;
     BigDecimal avgBodyFloor = BigDecimal.ZERO;
     BigDecimal avgLandFloor = BigDecimal.ZERO;
+    BigDecimal avgPetFloor = BigDecimal.ZERO;
 
     BigDecimal avgMaleFloorUsd = BigDecimal.ZERO;
     BigDecimal avgFemaleFloorUsd = BigDecimal.ZERO;
     BigDecimal avgVroomFloorUsd = BigDecimal.ZERO;
     BigDecimal avgBodyFloorUsd = BigDecimal.ZERO;
     BigDecimal avgLandFloorUsd = BigDecimal.ZERO;
+    BigDecimal avgPetFloorUsd = BigDecimal.ZERO;
 
     for (Floor floor : floorValuesLastDay) {
       final var localDateTime =
@@ -145,6 +149,10 @@ public class FloorService {
         avgBodyFloor = avgBodyFloor.add(floor.getBodyFloor());
         avgLandFloor = avgLandFloor.add(floor.getLandFloor());
 
+        if(floor.getPetFloor() != null) {
+          avgPetFloor = avgPetFloor.add(floor.getPetFloor());
+        }
+
         avgMaleFloorUsd = avgMaleFloorUsd.add(floor.getMaleFloor().multiply(floor.getMagicPrice()));
         avgFemaleFloorUsd =
             avgFemaleFloorUsd.add(floor.getFemaleFloor().multiply(floor.getMagicPrice()));
@@ -152,6 +160,10 @@ public class FloorService {
             avgVroomFloorUsd.add(floor.getVroomFloor().multiply(floor.getMagicPrice()));
         avgBodyFloorUsd = avgBodyFloorUsd.add(floor.getBodyFloor().multiply(floor.getMagicPrice()));
         avgLandFloorUsd = avgLandFloorUsd.add(floor.getLandFloor().multiply(floor.getMagicPrice()));
+
+        if(floor.getPetFloor() != null) {
+          avgPetFloorUsd = avgPetFloorUsd.add(floor.getPetFloor()).multiply(floor.getMagicPrice());
+        }
       } else {
         // commit average to map
         maleFloors.put(
@@ -169,6 +181,9 @@ public class FloorService {
         landFloors.put(
             floor.getCreated(),
             avgLandFloor.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+        petFloors.put(
+            floor.getCreated(),
+            avgPetFloor.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
 
         maleFloorsUsd.put(
             floor.getCreated(),
@@ -185,18 +200,23 @@ public class FloorService {
         landFloorsUsd.put(
             floor.getCreated(),
             avgLandFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+        petFloorsUsd.put(
+            floor.getCreated(),
+            avgPetFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
 
         avgMaleFloor = BigDecimal.ZERO;
         avgFemaleFloor = BigDecimal.ZERO;
         avgVroomFloor = BigDecimal.ZERO;
         avgBodyFloor = BigDecimal.ZERO;
         avgLandFloor = BigDecimal.ZERO;
+        avgPetFloor = BigDecimal.ZERO;
 
         avgMaleFloorUsd = BigDecimal.ZERO;
         avgFemaleFloorUsd = BigDecimal.ZERO;
         avgVroomFloorUsd = BigDecimal.ZERO;
         avgBodyFloorUsd = BigDecimal.ZERO;
         avgLandFloorUsd = BigDecimal.ZERO;
+        avgPetFloorUsd = BigDecimal.ZERO;
 
         hourlyFloors = 0;
 
@@ -210,6 +230,7 @@ public class FloorService {
     TimeSeries vroomSeries = new TimeSeries("VROOM");
     TimeSeries bodySeries = new TimeSeries("SWOL");
     TimeSeries landSeries = new TimeSeries("LAND");
+    TimeSeries petSeries = new TimeSeries("SMOLPET");
 
     for (Map.Entry<Date, BigDecimal> entry : maleFloors.entrySet()) {
       maleSeries.add(new Hour(entry.getKey()), entry.getValue());
@@ -231,11 +252,16 @@ public class FloorService {
       landSeries.add(new Hour(entry.getKey()), entry.getValue());
     }
 
+    for (Map.Entry<Date, BigDecimal> entry : petFloors.entrySet()) {
+      petSeries.add(new Hour(entry.getKey()), entry.getValue());
+    }
+
     dataset.addSeries(maleSeries);
     dataset.addSeries(femaleSeries);
     dataset.addSeries(vroomSeries);
     dataset.addSeries(bodySeries);
     dataset.addSeries(landSeries);
+    dataset.addSeries(petSeries);
 
     JFreeChart chart =
         ChartFactory.createTimeSeriesChart("Smolverse Floor", "wen", "MAGIC", dataset);
@@ -285,6 +311,7 @@ public class FloorService {
     TimeSeries vroomSeriesUsd = new TimeSeries("VROOM");
     TimeSeries bodySeriesUsd = new TimeSeries("SWOL");
     TimeSeries landSeriesUsd = new TimeSeries("LAND");
+    TimeSeries petSeriesUsd = new TimeSeries("SMOLPET");
 
     for (Map.Entry<Date, BigDecimal> entry : maleFloorsUsd.entrySet()) {
       maleSeriesUsd.add(new Hour(entry.getKey()), entry.getValue());
@@ -306,11 +333,16 @@ public class FloorService {
       landSeriesUsd.add(new Hour(entry.getKey()), entry.getValue());
     }
 
+    for (Map.Entry<Date, BigDecimal> entry : petFloorsUsd.entrySet()) {
+      petSeriesUsd.add(new Hour(entry.getKey()), entry.getValue());
+    }
+
     datasetUsd.addSeries(maleSeriesUsd);
     datasetUsd.addSeries(femaleSeriesUsd);
     datasetUsd.addSeries(vroomSeriesUsd);
     datasetUsd.addSeries(bodySeriesUsd);
     datasetUsd.addSeries(landSeriesUsd);
+    datasetUsd.addSeries(petSeries);
 
     JFreeChart chartUsd =
         ChartFactory.createTimeSeriesChart("Smolverse Floor", "wen", "USD $", datasetUsd);
