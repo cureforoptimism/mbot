@@ -90,6 +90,14 @@
             {
               "name": "family",
               "value": "family"
+            },
+            {
+              "name": "smolpet",
+              "value": "smolpet"
+            },
+            {
+              "name": "bodypet",
+              "value": "bodypet"
             }
           ]
         }
