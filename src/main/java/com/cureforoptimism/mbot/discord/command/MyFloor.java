@@ -616,7 +616,7 @@ public class MyFloor implements MbotCommand {
           for (int x = 0; x < bodyPetBalance.intValue(); x++) {
             if (remove) {
               existingFloor
-                  .getPets()
+                  .getBodyPets()
                   .remove(
                       bodyPetsContact
                           .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
@@ -624,7 +624,7 @@ public class MyFloor implements MbotCommand {
                           .longValue());
             } else {
               existingFloor
-                  .getPets()
+                  .getBodyPets()
                   .add(
                       bodyPetsContact
                           .tokenOfOwnerByIndex(address, new BigInteger(String.valueOf(x)))
