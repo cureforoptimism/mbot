@@ -373,8 +373,8 @@ public class MyFloor implements MbotCommand {
       if (!header.isEmpty()) {
         header.append("\n");
       }
-      header.append("PETS: ");
-      bodyPets.forEach(s -> header.append("#").append(s.getId()).append(" "));
+      header.append("SMOLPETS: ");
+      pets.forEach(s -> header.append("#").append(s.getId()).append(" "));
     }
 
     if (!bodyPets.isEmpty()) {
@@ -399,7 +399,7 @@ public class MyFloor implements MbotCommand {
       if (!header.isEmpty()) {
         header.append("\n");
       }
-      header.append("PETS: ");
+      header.append("BODYPETS: ");
       bodyPets.forEach(s -> header.append("#").append(s.getId()).append(" "));
     }
 
