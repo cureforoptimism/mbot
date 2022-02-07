@@ -355,7 +355,7 @@ public class MyFloor implements MbotCommand {
     if (!pets.isEmpty()) {
       int numPets = pets.size();
       totalMagic = totalMagic.add(petFloor.multiply(BigDecimal.valueOf(numPets)));
-      totalUsd = totalUsd.add(petFloor.multiply(BigDecimal.valueOf(numPets)));
+      totalUsd = totalUsd.add(usdPetFloor.multiply(BigDecimal.valueOf(numPets)));
 
       table
           .nextRow()
@@ -380,7 +380,7 @@ public class MyFloor implements MbotCommand {
     if (!bodyPets.isEmpty()) {
       int numPets = bodyPets.size();
       totalMagic = totalMagic.add(bodyPetFloor.multiply(BigDecimal.valueOf(numPets)));
-      totalUsd = totalUsd.add(bodyPetFloor.multiply(BigDecimal.valueOf(numPets)));
+      totalUsd = totalUsd.add(usdBodyFloor.multiply(BigDecimal.valueOf(numPets)));
 
       table
           .nextRow()
