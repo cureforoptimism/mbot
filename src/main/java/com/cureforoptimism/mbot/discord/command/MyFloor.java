@@ -254,7 +254,7 @@ public class MyFloor implements MbotCommand {
       }
 
       if (numLadies > 0) {
-        totalMagic = totalMagic.add(cheapestMale.multiply(BigDecimal.valueOf(numLadies)));
+        totalMagic = totalMagic.add(cheapestFemale.multiply(BigDecimal.valueOf(numLadies)));
         totalUsd = totalUsd.add(usdCheapestFemale.multiply(BigDecimal.valueOf(numLadies)));
 
         table
