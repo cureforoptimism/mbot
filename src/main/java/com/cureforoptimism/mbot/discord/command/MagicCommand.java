@@ -45,14 +45,20 @@ public class MagicCommand implements MbotCommand {
   public Mono<Message> handle(MessageCreateEvent event) {
     log.info("!magic command received");
 
-    return event.getMessage().getChannel().flatMap(c -> c.createMessage(getMagicEmbed()));
+    return event.getMessage().getChannel().flatMap(c -> c.createMessage("defined.fi is currently down for $MAGIC; this command is temporarily unavailable. Price is based on CoinGecko, and reasonably accurate!"));
+
+    // TODO: Uncomment, and reenable defined
+//    return event.getMessage().getChannel().flatMap(c -> c.createMessage(getMagicEmbed()));
   }
 
   @Override
   public Mono<Void> handle(ChatInputInteractionEvent event) {
     log.info("/magic command received");
 
-    event.reply().withEmbeds(getMagicEmbed()).block();
+    event.reply("defined.fi is currently down for $MAGIC; this command is temporarily unavailable. Price is based on CoinGecko, and reasonably accurate!");
+
+    // TODO: Uncomment, and reenable defined
+//    event.reply().withEmbeds(getMagicEmbed()).block();
 
     return Mono.empty();
   }
