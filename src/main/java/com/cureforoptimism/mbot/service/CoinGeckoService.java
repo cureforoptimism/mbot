@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 public class CoinGeckoService implements MagicValueService {
   private final CoinGeckoApiClient client;
   private final DiscordBot discordClient;
-  private final boolean enabled = true;
+  private final boolean enabled = false;
   @Getter private CoinFullData coinFullData;
   @Getter private Optional<Double> ethPrice;
 
