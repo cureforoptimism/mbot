@@ -380,7 +380,7 @@ public class MyFloor implements MbotCommand {
     if (!bodyPets.isEmpty()) {
       int numPets = bodyPets.size();
       totalMagic = totalMagic.add(bodyPetFloor.multiply(BigDecimal.valueOf(numPets)));
-      totalUsd = totalUsd.add(usdBodyFloor.multiply(BigDecimal.valueOf(numPets)));
+      totalUsd = totalUsd.add(usdBodyPetFloor.multiply(BigDecimal.valueOf(numPets)));
 
       table
           .nextRow()
