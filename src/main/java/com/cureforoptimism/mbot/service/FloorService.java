@@ -167,44 +167,46 @@ public class FloorService {
           avgPetFloorUsd = avgPetFloorUsd.add(floor.getPetFloor()).multiply(floor.getMagicPrice());
         }
       } else {
-        // commit average to map
-        maleFloors.put(
-            floor.getCreated(),
-            avgMaleFloor.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
-        femaleFloors.put(
-            floor.getCreated(),
-            avgFemaleFloor.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
-        vroomFloors.put(
-            floor.getCreated(),
-            avgVroomFloor.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
-        bodyFloors.put(
-            floor.getCreated(),
-            avgBodyFloor.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
-        landFloors.put(
-            floor.getCreated(),
-            avgLandFloor.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
-        petFloors.put(
-            floor.getCreated(),
-            avgPetFloor.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+        if (hourlyFloors != 0) {
+          // commit average to map
+          maleFloors.put(
+              floor.getCreated(),
+              avgMaleFloor.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+          femaleFloors.put(
+              floor.getCreated(),
+              avgFemaleFloor.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+          vroomFloors.put(
+              floor.getCreated(),
+              avgVroomFloor.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+          bodyFloors.put(
+              floor.getCreated(),
+              avgBodyFloor.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+          landFloors.put(
+              floor.getCreated(),
+              avgLandFloor.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+          petFloors.put(
+              floor.getCreated(),
+              avgPetFloor.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
 
-        maleFloorsUsd.put(
-            floor.getCreated(),
-            avgMaleFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
-        femaleFloorsUsd.put(
-            floor.getCreated(),
-            avgFemaleFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
-        vroomFloorsUsd.put(
-            floor.getCreated(),
-            avgVroomFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
-        bodyFloorsUsd.put(
-            floor.getCreated(),
-            avgBodyFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
-        landFloorsUsd.put(
-            floor.getCreated(),
-            avgLandFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
-        petFloorsUsd.put(
-            floor.getCreated(),
-            avgPetFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+          maleFloorsUsd.put(
+              floor.getCreated(),
+              avgMaleFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+          femaleFloorsUsd.put(
+              floor.getCreated(),
+              avgFemaleFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+          vroomFloorsUsd.put(
+              floor.getCreated(),
+              avgVroomFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+          bodyFloorsUsd.put(
+              floor.getCreated(),
+              avgBodyFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+          landFloorsUsd.put(
+              floor.getCreated(),
+              avgLandFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+          petFloorsUsd.put(
+              floor.getCreated(),
+              avgPetFloorUsd.divide(new BigDecimal(hourlyFloors), RoundingMode.HALF_UP));
+        }
 
         avgMaleFloor = BigDecimal.ZERO;
         avgFemaleFloor = BigDecimal.ZERO;
