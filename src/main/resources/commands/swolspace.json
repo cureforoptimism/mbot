@@ -1,0 +1,12 @@
+{
+  "name": "swolspace",
+  "description": "One smol step for swol, one giant leap for swolkind!",
+  "options": [
+    {
+      "name": "id",
+      "description": "SmolBody ID",
+      "type": 4,
+      "required": true
+    }
+  ]
+}
