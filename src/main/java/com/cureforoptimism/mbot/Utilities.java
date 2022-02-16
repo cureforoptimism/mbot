@@ -898,7 +898,7 @@ public class Utilities {
     CSVParser parser;
 
     try {
-      csv = new ClassPathResource("collection_body_pets.csv").getInputStream();
+      csv = new ClassPathResource("collection_smol_bodies.csv").getInputStream();
     } catch (IOException ex) {
       log.error("Unable to read CSV", ex);
       return;
@@ -918,9 +918,9 @@ public class Utilities {
               final var rank = r.get("nft_rank");
               final var id = r.get("id");
 
-              bodyPetRarityRankRepository.save(
-                  BodyPetRarityRank.builder()
-                      .bodyPetId(Long.parseLong(id))
+              smolBodyRarityRankRepository.save(
+                  SmolBodyRarityRank.builder()
+                      .smolBodyId(Long.parseLong(id))
                       .rank(Integer.parseInt(rank))
                       .build());
             });
