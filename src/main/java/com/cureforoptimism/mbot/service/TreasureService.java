@@ -512,14 +512,18 @@ public class TreasureService {
 
   @Scheduled(fixedDelay = 60000)
   public void getFloorPrice() {
+    List<String> tokenListings = new ArrayList<>();
+
     try {
+      // First, we need to get the list of tokenIds (collection + random identifier)
       String jsonBody =
-          "{\"query\":\"query getCollectionListings($id: ID!, $orderDirection: OrderDirection!, $tokenName: String, $skipBy: Int!, $first: Int!, $orderBy: Listing_orderBy!) {\\n  collection(id: $id) {\\n    name\\n    address\\n    listings(\\n      first: $first\\n      skip: $skipBy\\n      orderBy: $orderBy\\n      orderDirection: $orderDirection\\n      where: {status: Active, tokenName_contains: $tokenName, quantity_gt: 0}\\n    ) {\\n      user {\\n        id\\n      }\\n      expires\\n      id\\n      pricePerItem\\n      token {\\n        tokenId\\n        metadata {\\n          image\\n          name\\n          description\\n        }\\n        name\\n      }\\n      quantity\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\",\"tokenName\":\"\",\"skipBy\":0,\"first\":75,\"orderBy\":\"pricePerItem\",\"orderDirection\":\"asc\"},\"operationName\":\"getCollectionListings\"}";
+          "{\"query\":\"query getCollectionsListedTokens($collection: String!) {\\n  listings(\\n    first: 1000\\n    where: {collection: $collection, status: Active, quantity_gt: 0}\\n    orderBy: id\\n  ) {\\n    token {\\n      id\\n    }\\n  }\\n}\",\"variables\":{\"collection\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\"},\"operationName\":\"getCollectionsListedTokens\"}";
 
       HttpClient httpClient = HttpClient.newHttpClient();
       HttpRequest request =
           HttpRequest.newBuilder(
-                  new URI("https://api.thegraph.com/subgraphs/name/wyze/treasure-marketplace"))
+                  new URI(
+                      "https://api.thegraph.com/subgraphs/name/treasureproject/marketplace-next"))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .header("Content-Type", "application/json")
               .build();
@@ -527,15 +531,54 @@ public class TreasureService {
       try {
         HttpResponse<String> response =
             httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        JSONObject obj =
-            new JSONObject(response.body()).getJSONObject("data").getJSONObject("collection");
+        JSONArray listings =
+            new JSONObject(response.body()).getJSONObject("data").getJSONArray("listings");
+        for (int x = 0; x < listings.length(); x++) {
+          String tokenId = listings.getJSONObject(x).getJSONObject("token").getString("id");
+          tokenListings.add(tokenId);
+        }
+      } catch (InterruptedException | JSONException ex) {
+        log.warn("Error parsing treasure response", ex);
+      }
+
+      // Join the tokenId's for the next graphql filter (poor man's join)
+      StringBuilder joined = new StringBuilder();
+      joined.append("\"");
+      for (String tokenId : tokenListings) {
+        joined.append(tokenId).append("\",\"");
+      }
+
+      // Chop of trailing ,"
+      String tokenIds = joined.substring(0, joined.length() - 2);
+
+      jsonBody =
+          "{\"query\":\"query getCollectionListings($erc1155Filters: Token_filter, $erc1155Ordering: Token_orderBy, $erc721Filters: Listing_filter, $erc721Ordering: Listing_orderBy, $isERC1155: Boolean!, $orderDirection: OrderDirection, $skip: Int) {\\n  tokens(\\n    first: 200\\n    orderBy: floorPrice\\n    orderDirection: $orderDirection\\n    where: $erc1155Filters\\n  ) @include(if: $isERC1155) {\\n    __typename\\n    id\\n    floorPrice\\n    tokenId\\n    listings(where: {status: Active, quantity_gt: 0}, orderBy: pricePerItem) {\\n      pricePerItem\\n      quantity\\n    }\\n  }\\n  listings(\\n    first: 42\\n    orderBy: $erc721Ordering\\n    orderDirection: $orderDirection\\n    skip: $skip\\n    where: $erc721Filters\\n  ) @skip(if: $isERC1155) {\\n    __typename\\n    seller {\\n      id\\n    }\\n    expires\\n    id\\n    pricePerItem\\n    token {\\n      id\\n      tokenId\\n      name\\n    }\\n    quantity\\n  }\\n}\",\"variables\":{\"erc1155Filters\":{\"id_in\":[";
+      jsonBody += tokenIds;
+      jsonBody += "]},\"erc721Filters\":{\"status\":\"Active\",\"token_in\":[";
+      jsonBody += tokenIds;
+      jsonBody +=
+          "],\"quantity_gt\":0},\"erc721Ordering\":\"pricePerItem\",\"isERC1155\":false,\"orderDirection\":\"asc\",\"skip\":0},\"operationName\":\"getCollectionListings\"}";
+
+      httpClient = HttpClient.newHttpClient();
+      request =
+          HttpRequest.newBuilder(
+                  new URI(
+                      "https://api.thegraph.com/subgraphs/name/treasureproject/marketplace-next"))
+              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+              .header("Content-Type", "application/json")
+              .build();
+
+      try {
+        HttpResponse<String> response =
+            httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
 
         // Find cheapest male/female
         boolean cheapestMaleFound = false;
         boolean cheapestFemaleFound = false;
-        JSONArray listings = obj.getJSONArray("listings");
+        JSONArray listings =
+            new JSONObject(response.body()).getJSONObject("data").getJSONArray("listings");
 
         for (int x = 0; x < listings.length(); x++) {
           int tokenId = listings.getJSONObject(x).getJSONObject("token").getInt("tokenId");
@@ -566,7 +609,6 @@ public class TreasureService {
             log.warn("Unable to retrieve gender", ex);
           }
         }
-
       } catch (InterruptedException | JSONException ex) {
         log.warn("Error parsing treasure response", ex);
       }
