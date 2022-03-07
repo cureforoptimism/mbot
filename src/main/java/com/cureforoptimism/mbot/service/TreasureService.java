@@ -523,7 +523,7 @@ public class TreasureService {
       HttpRequest request =
           HttpRequest.newBuilder(
                   new URI(
-                      "https://api.thegraph.com/subgraphs/name/treasureproject/marketplace-next"))
+                      "https://api.thegraph.com/subgraphs/name/treasureproject/marketplace"))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .header("Content-Type", "application/json")
               .build();
@@ -563,7 +563,7 @@ public class TreasureService {
       request =
           HttpRequest.newBuilder(
                   new URI(
-                      "https://api.thegraph.com/subgraphs/name/treasureproject/marketplace-next"))
+                      "https://api.thegraph.com/subgraphs/name/treasureproject/marketplace"))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .header("Content-Type", "application/json")
               .build();

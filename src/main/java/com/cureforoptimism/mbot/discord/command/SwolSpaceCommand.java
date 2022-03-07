@@ -82,7 +82,7 @@ public class SwolSpaceCommand implements MbotCommand {
       }
 
       final var response = createEmbed(tokenId);
-      if(response == null) {
+      if (response == null) {
         return Mono.empty();
       }
 
@@ -113,7 +113,7 @@ public class SwolSpaceCommand implements MbotCommand {
     }
 
     final var embed = createEmbed(tokenId);
-    if(embed == null) {
+    if (embed == null) {
       return Mono.empty();
     }
 
