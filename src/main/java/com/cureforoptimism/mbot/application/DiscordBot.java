@@ -13,11 +13,9 @@ import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.presence.ClientActivity;
 import discord4j.core.object.presence.ClientPresence;
 import discord4j.core.spec.MessageCreateSpec;
-import discord4j.core.spec.UserEditSpec;
 import discord4j.discordjson.json.ApplicationCommandData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.service.ApplicationService;
-import discord4j.rest.util.Image.Format;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -27,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.ApplicationContext;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
@@ -165,17 +162,17 @@ public class DiscordBot implements ApplicationRunner {
             });
 
     // Update avatar (we don't need to do this very often, so leave it commented out)
-    try {
-      final var bytes = new ClassPathResource("smol_bot.png").getInputStream();
-      client
-          .edit(
-              UserEditSpec.builder()
-                  .avatar(discord4j.rest.util.Image.ofRaw(bytes.readAllBytes(), Format.PNG))
-                  .build())
-          .block();
-    } catch (Exception ex) {
-      log.error(ex.getMessage());
-    }
+//    try {
+//      final var bytes = new ClassPathResource("smol_bot.png").getInputStream();
+//      client
+//          .edit(
+//              UserEditSpec.builder()
+//                  .avatar(discord4j.rest.util.Image.ofRaw(bytes.readAllBytes(), Format.PNG))
+//                  .build())
+//          .block();
+//    } catch (Exception ex) {
+//      log.error(ex.getMessage());
+//    }
 
     log.info("Discord client logged in");
   }
