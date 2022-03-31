@@ -1,33 +1,21 @@
 package com.cureforoptimism.mbot.service;
 
-import static com.cureforoptimism.mbot.Constants.SMOL_BODY_HIGHEST_ID;
-import static com.cureforoptimism.mbot.Constants.SMOL_TOTAL_SUPPLY;
-import static com.cureforoptimism.mbot.Constants.SMOL_VROOM_TOTAL_SUPPLY;
-
 import com.cureforoptimism.mbot.Constants;
-import com.cureforoptimism.mbot.domain.BodyPet;
-import com.cureforoptimism.mbot.domain.BodyPetTrait;
-import com.cureforoptimism.mbot.domain.Pet;
-import com.cureforoptimism.mbot.domain.PetTrait;
-import com.cureforoptimism.mbot.domain.Smol;
-import com.cureforoptimism.mbot.domain.SmolBody;
-import com.cureforoptimism.mbot.domain.SmolBodyTrait;
-import com.cureforoptimism.mbot.domain.SmolSale;
-import com.cureforoptimism.mbot.domain.SmolType;
-import com.cureforoptimism.mbot.domain.Trait;
-import com.cureforoptimism.mbot.domain.VroomTrait;
-import com.cureforoptimism.mbot.repository.BodyPetRepository;
-import com.cureforoptimism.mbot.repository.PetRepository;
-import com.cureforoptimism.mbot.repository.SmolBodyRepository;
-import com.cureforoptimism.mbot.repository.SmolRepository;
-import com.cureforoptimism.mbot.repository.SmolSalesRepository;
-import com.cureforoptimism.mbot.repository.VroomTraitsRepository;
+import com.cureforoptimism.mbot.domain.*;
+import com.cureforoptimism.mbot.repository.*;
 import com.madgag.gif.fmsware.AnimatedGifEncoder;
-import com.smolbrains.BodyPetsContact;
-import com.smolbrains.PetsContract;
-import com.smolbrains.SmolBodiesContract;
-import com.smolbrains.SmolBrainsContract;
-import com.smolbrains.SmolBrainsVroomContract;
+import com.smolbrains.*;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import javax.imageio.ImageIO;
+import javax.transaction.Transactional;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -42,23 +30,9 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import javax.imageio.ImageIO;
-import javax.transaction.Transactional;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
+import java.util.*;
+
+import static com.cureforoptimism.mbot.Constants.*;
 
 @Component
 @Slf4j
@@ -522,8 +496,7 @@ public class TreasureService {
       HttpClient httpClient = HttpClient.newHttpClient();
       HttpRequest request =
           HttpRequest.newBuilder(
-                  new URI(
-                      "https://api.thegraph.com/subgraphs/name/treasureproject/marketplace"))
+                  new URI("https://api.thegraph.com/subgraphs/name/treasureproject/marketplace"))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .header("Content-Type", "application/json")
               .build();
@@ -562,8 +535,7 @@ public class TreasureService {
       httpClient = HttpClient.newHttpClient();
       request =
           HttpRequest.newBuilder(
-                  new URI(
-                      "https://api.thegraph.com/subgraphs/name/treasureproject/marketplace"))
+                  new URI("https://api.thegraph.com/subgraphs/name/treasureproject/marketplace"))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .header("Content-Type", "application/json")
               .build();
@@ -714,10 +686,10 @@ public class TreasureService {
       // Body floor (also, for the love of God cure, just rewrite thegraph query to do this in fewer
       // calls)
       jsonBody =
-          "{\"query\":\"query getCollectionStats($id: ID!) {\\n  collection(id: $id) {\\n    floorPrice\\n    totalListings\\n    totalVolume\\n    listings(where: {status: Active}) {\\n      token {\\n        floorPrice\\n        name\\n      }\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0x17dacad7975960833f374622fad08b90ed67d1b5\"},\"operationName\":\"getCollectionStats\"}";
+          "{\"query\":\"query getCollectionStats($id: ID!) {\\n  collection(id: $id) {\\n    listings(where: {status: Active}) {\\n      token {\\n        floorPrice\\n        tokenId\\n        name\\n      }\\n    }\\n    standard\\n    stats {\\n      floorPrice\\n      listings\\n      items\\n      volume\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0x17dacad7975960833f374622fad08b90ed67d1b5\"},\"operationName\":\"getCollectionStats\"}";
       request =
           HttpRequest.newBuilder(
-                  new URI("https://api.thegraph.com/subgraphs/name/wyze/treasure-marketplace"))
+                  new URI("https://api.thegraph.com/subgraphs/name/treasureproject/marketplace"))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .header("Content-Type", "application/json")
               .build();
@@ -726,7 +698,10 @@ public class TreasureService {
         HttpResponse<String> response =
             httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         JSONObject obj =
-            new JSONObject(response.body()).getJSONObject("data").getJSONObject("collection");
+            new JSONObject(response.body())
+                .getJSONObject("data")
+                .getJSONObject("collection")
+                .getJSONObject("stats");
 
         final var floorPrice = obj.getBigInteger("floorPrice");
 
