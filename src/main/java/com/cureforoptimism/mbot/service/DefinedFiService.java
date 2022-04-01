@@ -1,6 +1,11 @@
 package com.cureforoptimism.mbot.service;
 
 import com.cureforoptimism.mbot.application.DiscordBot;
+  import lombok.AllArgsConstructor;
+import org.json.JSONObject;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -9,10 +14,6 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import lombok.AllArgsConstructor;
-import org.json.JSONObject;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
 
 @Service
 @AllArgsConstructor
@@ -37,10 +38,10 @@ public class DefinedFiService implements MagicValueService {
       req =
           HttpRequest.newBuilder(
                   new URI(
-                      "https://7ng6kythprhcjaby3nodr77leu.appsync-api.us-west-2.amazonaws.com/graphql"))
+                      "https://i3zwhsu375dqllo5srv5vn35ba.appsync-api.us-west-2.amazonaws.com/graphql"))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .header("Content-Type", "application/json")
-              .header("x-api-key", "da2-4isjqg3vu5c5leyskyr2tw2tja")
+              .header("x-api-key", "da2-vkmqkh3wlngdfktfeybq6j44li")
               .build();
 
       final var response = client.send(req, HttpResponse.BodyHandlers.ofString());
