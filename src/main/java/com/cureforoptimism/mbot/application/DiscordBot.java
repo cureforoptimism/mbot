@@ -162,17 +162,17 @@ public class DiscordBot implements ApplicationRunner {
             });
 
     // Update avatar (we don't need to do this very often, so leave it commented out)
-//    try {
-//      final var bytes = new ClassPathResource("smol_bot.png").getInputStream();
-//      client
-//          .edit(
-//              UserEditSpec.builder()
-//                  .avatar(discord4j.rest.util.Image.ofRaw(bytes.readAllBytes(), Format.PNG))
-//                  .build())
-//          .block();
-//    } catch (Exception ex) {
-//      log.error(ex.getMessage());
-//    }
+    //    try {
+    //      final var bytes = new ClassPathResource("smol_bot.png").getInputStream();
+    //      client
+    //          .edit(
+    //              UserEditSpec.builder()
+    //                  .avatar(discord4j.rest.util.Image.ofRaw(bytes.readAllBytes(), Format.PNG))
+    //                  .build())
+    //          .block();
+    //    } catch (Exception ex) {
+    //      log.error(ex.getMessage());
+    //    }
 
     log.info("Discord client logged in");
   }
