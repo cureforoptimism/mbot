@@ -8,6 +8,7 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.core.spec.InteractionFollowupCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
 import java.awt.AlphaComposite;
 import java.awt.Graphics2D;
@@ -32,12 +33,22 @@ import reactor.core.publisher.Mono;
 
 @Slf4j
 @Component
-public class BodyCommand implements MbotCommand {
+public class FullSmolCommand implements MbotCommand {
   private final TraitsRepository traitsRepository;
   private final Utilities utilities;
   private final Map<String, BufferedImage> bodies;
 
-  public BodyCommand(TraitsRepository traitsRepository, Utilities utilities) {
+  private static class FullSmolResponse {
+    private byte[] image;
+    private EmbedCreateSpec embed;
+
+    public FullSmolResponse(byte[] image, EmbedCreateSpec embed) {
+      this.image = image;
+      this.embed = embed;
+    }
+  }
+
+  public FullSmolCommand(TraitsRepository traitsRepository, Utilities utilities) {
     this.traitsRepository = traitsRepository;
     this.utilities = utilities;
 
@@ -176,7 +187,7 @@ public class BodyCommand implements MbotCommand {
 
   @Override
   public String getName() {
-    return "body";
+    return "fullsmol";
   }
 
   @Override
@@ -191,7 +202,7 @@ public class BodyCommand implements MbotCommand {
 
   @Override
   public Mono<Message> handle(MessageCreateEvent event) {
-    log.info("!body command received");
+    log.info("!fullsmol command received");
 
     String msg = event.getMessage().getContent();
     String[] parts = msg.split(" ");
@@ -201,6 +212,52 @@ public class BodyCommand implements MbotCommand {
     }
 
     String tokenId = parts[1];
+
+    final var response = getBodyEmbed(tokenId);
+    return event
+        .getMessage()
+        .getChannel()
+        .flatMap(
+            c ->
+                c.createMessage(
+                    MessageCreateSpec.builder()
+                        .addEmbed(response.embed)
+                        .addFile(tokenId + "body.png", new ByteArrayInputStream(response.image))
+                        .build()));
+  }
+
+  @Override
+  public Mono<Void> handle(ChatInputInteractionEvent event) {
+    log.info("/fullsmol command received");
+
+    event.deferReply().block();
+
+    final var tokenId = event.getOption("id").orElse(null);
+    if (tokenId == null) {
+      return null;
+    }
+
+    if (tokenId.getValue().isEmpty()) {
+      return Mono.empty();
+    }
+
+    final var tokenIdStrOpt = tokenId.getValue().get();
+
+    event.createFollowup(getBodyEmbedFollowup(tokenIdStrOpt.getRaw())).block();
+
+    return Mono.empty();
+  }
+
+  private InteractionFollowupCreateSpec getBodyEmbedFollowup(String tokenId) {
+    final var fullSmolResponse = getBodyEmbed(tokenId);
+
+    return InteractionFollowupCreateSpec.builder()
+        .addFile(tokenId + "body.png", new ByteArrayInputStream(fullSmolResponse.image))
+        .addEmbed(fullSmolResponse.embed)
+        .build();
+  }
+
+  private FullSmolResponse getBodyEmbed(String tokenId) {
     List<Trait> traits = traitsRepository.findBySmol_Id(Long.parseLong(tokenId));
 
     String gender = null;
@@ -224,7 +281,7 @@ public class BodyCommand implements MbotCommand {
       final var imageSmolOpt = utilities.getSmolBufferedImage(tokenId, SmolType.SMOL, true);
       if (imageSmolOpt.isEmpty()) {
         log.warn("Could not retrieve smol " + tokenId);
-        return Mono.empty();
+        return null;
       }
 
       final var imageSmol = imageSmolOpt.get();
@@ -258,36 +315,22 @@ public class BodyCommand implements MbotCommand {
 
       graphics.dispose();
 
-      ImageIO.write(output, "png", outputStream);
+      try {
+        ImageIO.write(output, "png", outputStream);
+      } catch (IOException ex) {
+        log.warn("Unable to write PNG", ex);
+      }
+      final var embed =
+          EmbedCreateSpec.builder()
+              .title("Free body, good vibes! #" + tokenId + "!")
+              .image("attachment://" + tokenId + "body.png")
+              .footer("Body rocking! From commonopoly x Cure For Optimism", null)
+              .build();
 
-      return event
-          .getMessage()
-          .getChannel()
-          .flatMap(
-              c -> {
-                final var embed =
-                    EmbedCreateSpec.builder()
-                        .title("Free body, good vibes! #" + tokenId + "!")
-                        .image("attachment://" + tokenId + "body.png")
-                        .footer("Body rocking! From commonopoly x Cure For Optimism", null)
-                        .build();
-
-                return c.createMessage(
-                    MessageCreateSpec.builder()
-                        .addFile(
-                            tokenId + "body.png",
-                            new ByteArrayInputStream(outputStream.toByteArray()))
-                        .addEmbed(embed)
-                        .build());
-              });
-    } catch (IOException ex) {
-      log.error("Error retrieving smol image", ex);
-      return Mono.empty();
+      return new FullSmolResponse(outputStream.toByteArray(), embed);
+    } catch (Exception ex) {
+      log.warn("Error rendering full smol", ex);
+      return null;
     }
-  }
-
-  @Override
-  public Mono<Void> handle(ChatInputInteractionEvent event) {
-    return Mono.empty();
   }
 }

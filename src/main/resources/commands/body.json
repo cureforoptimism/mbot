@@ -1,0 +1,12 @@
+{
+  "name": "fullsmol",
+  "description": "Smols have brains AND bodies?!?",
+  "options": [
+    {
+      "name": "id",
+      "description": "Smol ID",
+      "type": 4,
+      "required": true
+    }
+  ]
+}
