@@ -13,7 +13,7 @@ public class Constants {
   public static final long SWOL_GUILD_ID = 918685570975277097L;
   public static final long SMOL_GUILD_ID = 897404773622505482L;
   public static final long SWOL_OG_ROLE_ID = 903411238791442512L;
-  public static final long SMOL_OG_ROLE_ID = 899175139546116147L;
+  public static final long SMOL_OG_ROLE_ID = 963739029709422603L;
   public static final long SMOL_TEAM_ROLE_ID = 920825123672571935L;
   public static final long CFO_TEST_GUILD_ID = 926303694302109796L;
   public static final long CFO_TEST_ROLE_ID_FROM = 935797232198901821L;
