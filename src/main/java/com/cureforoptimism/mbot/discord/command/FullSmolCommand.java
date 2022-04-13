@@ -70,7 +70,7 @@ public class FullSmolCommand implements MbotCommand {
           ImageIO.read(
               new ClassPathResource("smol_brains_body/female_body/GREEN.PNG").getInputStream()));
       bodies.put(
-          "FEMALE_LIGHT-BROWN",
+          "FEMALE_BROWN",
           ImageIO.read(
               new ClassPathResource("smol_brains_body/female_body/LIGHT-BROWN.PNG")
                   .getInputStream()));
