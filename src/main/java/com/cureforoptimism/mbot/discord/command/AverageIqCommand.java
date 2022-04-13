@@ -65,4 +65,9 @@ public class AverageIqCommand implements MbotCommand {
 
     return Mono.empty();
   }
+
+  @Override
+  public Boolean adminOnly() {
+    return false;
+  }
 }

@@ -15,4 +15,6 @@ public interface MbotCommand {
   Mono<Message> handle(MessageCreateEvent event);
 
   Mono<Void> handle(ChatInputInteractionEvent event);
+
+  Boolean adminOnly();
 }

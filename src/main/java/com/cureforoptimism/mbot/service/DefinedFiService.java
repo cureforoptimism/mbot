@@ -1,7 +1,7 @@
 package com.cureforoptimism.mbot.service;
 
 import com.cureforoptimism.mbot.application.DiscordBot;
-  import lombok.AllArgsConstructor;
+import lombok.AllArgsConstructor;
 import org.json.JSONObject;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;

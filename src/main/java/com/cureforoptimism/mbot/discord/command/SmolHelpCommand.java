@@ -4,10 +4,11 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
-import java.util.Collection;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+
+import java.util.Collection;
 
 @Component
 public class SmolHelpCommand implements MbotCommand {
@@ -67,5 +68,10 @@ public class SmolHelpCommand implements MbotCommand {
   @Override
   public Mono<Void> handle(ChatInputInteractionEvent event) {
     return null;
+  }
+
+  @Override
+  public Boolean adminOnly() {
+    return false;
   }
 }

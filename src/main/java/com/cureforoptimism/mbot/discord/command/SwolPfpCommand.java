@@ -38,4 +38,9 @@ public class SwolPfpCommand implements MbotCommand {
   public Mono<Void> handle(ChatInputInteractionEvent event) {
     return null;
   }
+
+  @Override
+  public Boolean adminOnly() {
+    return false;
+  }
 }

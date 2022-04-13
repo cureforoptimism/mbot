@@ -9,11 +9,12 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionFollowupCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
-import java.io.ByteArrayInputStream;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+
+import java.io.ByteArrayInputStream;
 
 @Component
 @AllArgsConstructor
@@ -138,5 +139,10 @@ public class PfpCommand implements MbotCommand {
                 .image("attachment://pfp.gif")
                 .build())
         .build();
+  }
+
+  @Override
+  public Boolean adminOnly() {
+    return false;
   }
 }
