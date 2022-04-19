@@ -109,7 +109,6 @@ public class SpaceCommand implements MbotCommand {
                 imageSmol.getWidth(), imageSmol.getHeight(), BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = output.createGraphics();
         graphics.setComposite(AlphaComposite.SrcOver);
-        graphics.setComposite(AlphaComposite.SrcOver);
         graphics.drawImage(Scalr.resize(imgGalaxy, Mode.FIT_EXACT, 350), 0, 0, null);
 
         graphics.drawImage(imageSmol, 0, 0, null);

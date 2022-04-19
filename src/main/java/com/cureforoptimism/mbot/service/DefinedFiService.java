@@ -1,11 +1,6 @@
 package com.cureforoptimism.mbot.service;
 
 import com.cureforoptimism.mbot.application.DiscordBot;
-import lombok.AllArgsConstructor;
-import org.json.JSONObject;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -14,6 +9,10 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import lombok.AllArgsConstructor;
+import org.json.JSONObject;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 @Service
 @AllArgsConstructor
