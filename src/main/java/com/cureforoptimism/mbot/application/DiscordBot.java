@@ -9,17 +9,16 @@ import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.presence.ClientActivity;
 import discord4j.core.object.presence.ClientPresence;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.discordjson.json.ApplicationCommandData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
+import discord4j.gateway.intent.Intent;
+import discord4j.gateway.intent.IntentSet;
 import discord4j.rest.service.ApplicationService;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -28,6 +27,10 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 @Slf4j
@@ -81,6 +84,7 @@ public class DiscordBot implements ApplicationRunner {
         DiscordClientBuilder.create(tokenService.getDiscordToken())
             .build()
             .gateway()
+            .setEnabledIntents(IntentSet.of(Intent.GUILD_MEMBERS, Intent.GUILD_MESSAGES))
             .login()
             .block();
 
@@ -140,7 +144,7 @@ public class DiscordBot implements ApplicationRunner {
       }
     }
 
-    MbotCommandListener mbotCommandListener = new MbotCommandListener(context);
+    MbotCommandListener mbotCommandListener = new MbotCommandListener(context, this);
 
     client.getEventDispatcher().on(MessageCreateEvent.class).subscribe(mbotCommandListener::handle);
     client
@@ -191,6 +195,37 @@ public class DiscordBot implements ApplicationRunner {
         log.warn("Unable to post to channel: " + discordChannelId);
       }
     }
+  }
+
+  public int migrateRoles(Long fromGuildId, Long toGuildId, Long fromRole, Long toRole) {
+    final var fromGuild = client.getGuildById(Snowflake.of(fromGuildId)).block();
+    final var fromMembersAll = fromGuild.getMembers().collectList().block();
+
+    Set<Long> fromMembers = new HashSet<>();
+
+    for (Member member : fromMembersAll) {
+      if (member.getRoleIds().contains(Snowflake.of(fromRole))) {
+        fromMembers.add(member.getId().asLong());
+      }
+    }
+
+    final var toGuild = client.getGuildById(Snowflake.of(toGuildId)).block();
+    final var toMembersAll = toGuild.getMembers().collectList().block();
+
+    AtomicInteger rolesMigrated = new AtomicInteger(0);
+    toMembersAll.stream()
+        .filter(
+            m ->
+                fromMembers.contains(m.getId().asLong())
+                    && !m.getRoleIds().contains(Snowflake.of(toRole)))
+        .forEach(
+            m -> {
+              log.info("Migrating: " + m.getUsername() + "#" + m.getDiscriminator() + "; " + m.getDisplayName() + " (" + m.getId() + ")");
+              m.addRole(Snowflake.of(toRole)).block();
+              rolesMigrated.incrementAndGet();
+            });
+
+    return rolesMigrated.get();
   }
 
   // Basically an isEquals for ApplicationCommandData

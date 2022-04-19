@@ -248,6 +248,11 @@ public class FullSmolCommand implements MbotCommand {
     return Mono.empty();
   }
 
+  @Override
+  public Boolean adminOnly() {
+    return false;
+  }
+
   private InteractionFollowupCreateSpec getBodyEmbedFollowup(String tokenId) {
     final var fullSmolResponse = getBodyEmbed(tokenId);
 

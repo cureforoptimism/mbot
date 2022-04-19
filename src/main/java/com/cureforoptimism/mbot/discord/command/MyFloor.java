@@ -1,50 +1,33 @@
 package com.cureforoptimism.mbot.discord.command;
 
-import static com.cureforoptimism.mbot.domain.SmolType.VROOM;
-import static com.inamik.text.tables.Cell.Functions.HORIZONTAL_CENTER;
-import static com.inamik.text.tables.Cell.Functions.RIGHT_ALIGN;
-
 import com.cureforoptimism.mbot.Utilities;
 import com.cureforoptimism.mbot.application.DiscordBot;
-import com.cureforoptimism.mbot.domain.BodyPet;
-import com.cureforoptimism.mbot.domain.Land;
-import com.cureforoptimism.mbot.domain.Pet;
-import com.cureforoptimism.mbot.domain.Smol;
-import com.cureforoptimism.mbot.domain.SmolBody;
-import com.cureforoptimism.mbot.domain.SmolType;
-import com.cureforoptimism.mbot.domain.UserFloor;
-import com.cureforoptimism.mbot.domain.Vroom;
-import com.cureforoptimism.mbot.repository.BodyPetRepository;
-import com.cureforoptimism.mbot.repository.LandRepository;
-import com.cureforoptimism.mbot.repository.PetRepository;
-import com.cureforoptimism.mbot.repository.SmolBodyRepository;
-import com.cureforoptimism.mbot.repository.SmolRepository;
-import com.cureforoptimism.mbot.repository.UserFloorRepository;
-import com.cureforoptimism.mbot.repository.VroomRepository;
+import com.cureforoptimism.mbot.domain.*;
+import com.cureforoptimism.mbot.repository.*;
 import com.cureforoptimism.mbot.service.CoinGeckoService;
 import com.cureforoptimism.mbot.service.TreasureService;
 import com.inamik.text.tables.SimpleTable;
-import com.smolbrains.BodyPetsContact;
-import com.smolbrains.PetsContract;
-import com.smolbrains.SmolBodiesContract;
-import com.smolbrains.SmolBrainsContract;
-import com.smolbrains.SmolBrainsVroomContract;
-import com.smolbrains.SmolLandContract;
+import com.smolbrains.*;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionFollowupCreateSpec;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
+
+import static com.cureforoptimism.mbot.domain.SmolType.VROOM;
+import static com.inamik.text.tables.Cell.Functions.HORIZONTAL_CENTER;
+import static com.inamik.text.tables.Cell.Functions.RIGHT_ALIGN;
 
 @Component
 @AllArgsConstructor
@@ -651,5 +634,10 @@ public class MyFloor implements MbotCommand {
       case "bodypet" -> SmolType.BODY_PET;
       default -> SmolType.SMOL;
     };
+  }
+
+  @Override
+  public Boolean adminOnly() {
+    return false;
   }
 }
