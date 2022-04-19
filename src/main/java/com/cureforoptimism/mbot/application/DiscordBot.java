@@ -220,6 +220,7 @@ public class DiscordBot implements ApplicationRunner {
                     && !m.getRoleIds().contains(Snowflake.of(toRole)))
         .forEach(
             m -> {
+              log.info("Migrating: " + m.getUsername() + "#" + m.getDiscriminator() + "; " + m.getDisplayName() + " (" + m.getId() + ")");
               m.addRole(Snowflake.of(toRole)).block();
               rolesMigrated.incrementAndGet();
             });

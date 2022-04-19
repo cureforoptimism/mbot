@@ -10,7 +10,7 @@ public class Constants {
   public static final int PET_HIGHEST_ID = 14999;
   public static final int BODY_PET_TOTAL_SUPPLY = 10000;
   public static final int BODY_PET_HIGHEST_ID = 9999;
-  public static final long SWOL_GUILD_ID = 918685570975277097L;
+  public static final long SWOL_GUILD_ID = 903403660908838962L;
   public static final long SMOL_GUILD_ID = 897404773622505482L;
   public static final long SWOL_OG_ROLE_ID = 903411238791442512L;
   public static final long SMOL_OG_ROLE_ID = 963739029709422603L;
