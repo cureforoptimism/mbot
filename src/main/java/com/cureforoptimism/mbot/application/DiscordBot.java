@@ -156,13 +156,30 @@ public class DiscordBot implements ApplicationRunner {
         .on(RefreshEvent.class)
         .subscribe(
             event -> {
-              String posNeg = currentChange >= 0.0 ? "\uD83C\uDF4C" : "\uD83C\uDF46";
-              String nickName = ("MAGIC $" + currentPrice + " " + posNeg);
-              String presence = String.format("24h: %.2f%%", currentChange);
-              client.getGuilds().toStream().forEach(g -> g.changeSelfNickname(nickName).block());
-              client
-                  .updatePresence(ClientPresence.online(ClientActivity.watching(presence)))
-                  .block();
+              try {
+                String posNeg = currentChange >= 0.0 ? "\uD83C\uDF4C" : "\uD83C\uDF46";
+                String nickName = ("MAGIC $" + currentPrice + " " + posNeg);
+                String presence = String.format("24h: %.2f%%", currentChange);
+                client
+                    .getGuilds()
+                    .toStream()
+                    .forEach(
+                        g -> {
+                          try {
+                            g.changeSelfNickname(nickName).block();
+                          } catch (Exception ex) {
+                            log.warn(
+                                "Unable to change nickname for server: "
+                                    + g.getId()
+                                    + "; will try again");
+                          }
+                        });
+                client
+                    .updatePresence(ClientPresence.online(ClientActivity.watching(presence)))
+                    .block();
+              } catch (Exception ex) {
+                log.warn("Unable to change nickname: " + ex);
+              }
             });
 
     // Update avatar (we don't need to do this very often, so leave it commented out)
@@ -220,7 +237,16 @@ public class DiscordBot implements ApplicationRunner {
                     && !m.getRoleIds().contains(Snowflake.of(toRole)))
         .forEach(
             m -> {
-              log.info("Migrating: " + m.getUsername() + "#" + m.getDiscriminator() + "; " + m.getDisplayName() + " (" + m.getId() + ")");
+              log.info(
+                  "Migrating: "
+                      + m.getUsername()
+                      + "#"
+                      + m.getDiscriminator()
+                      + "; "
+                      + m.getDisplayName()
+                      + " ("
+                      + m.getId()
+                      + ")");
               m.addRole(Snowflake.of(toRole)).block();
               rolesMigrated.incrementAndGet();
             });
