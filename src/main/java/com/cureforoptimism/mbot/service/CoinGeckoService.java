@@ -5,9 +5,11 @@ import com.litesoftwares.coingecko.CoinGeckoApiClient;
 import com.litesoftwares.coingecko.domain.Coins.CoinFullData;
 import java.util.Optional;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class CoinGeckoService implements MagicValueService {
   private final CoinGeckoApiClient client;
@@ -23,19 +25,19 @@ public class CoinGeckoService implements MagicValueService {
 
   @Scheduled(fixedDelay = 30000)
   public synchronized void refreshMagicPrice() {
-    this.coinFullData = client.getCoinById("magic");
-    this.ethPrice =
-        Optional.of(
-            client
-                .getPrice("ethereum", "usd", false, false, false, false)
-                .get("ethereum")
-                .get("usd"));
-
-    if (!enabled) {
-      return;
-    }
-
     try {
+      this.coinFullData = client.getCoinById("magic");
+      this.ethPrice =
+          Optional.of(
+              client
+                  .getPrice("ethereum", "usd", false, false, false, false)
+                  .get("ethereum")
+                  .get("usd"));
+
+      if (!enabled) {
+        return;
+      }
+
       final var priceMap = client.getPrice("magic", "usd", false, false, true, false);
       if (priceMap.containsKey("magic")
           && priceMap.get("magic").containsKey("usd")
@@ -52,7 +54,10 @@ public class CoinGeckoService implements MagicValueService {
             null);
       }
     } catch (Exception ex) {
+      log.error("Error retrieving MAGIC price from coingecko", ex);
       // Ignore, it'll retry
+    } finally {
+      client.shutdown();
     }
   }
 }
