@@ -1,5 +1,7 @@
 package com.cureforoptimism.mbot.application;
 
+import static com.cureforoptimism.mbot.Constants.SMOL_GUILD_ID;
+
 import com.cureforoptimism.mbot.discord.events.RefreshEvent;
 import com.cureforoptimism.mbot.discord.listener.MbotCommandListener;
 import com.cureforoptimism.mbot.service.TokenService;
@@ -19,6 +21,14 @@ import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.gateway.intent.Intent;
 import discord4j.gateway.intent.IntentSet;
 import discord4j.rest.service.ApplicationService;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -27,10 +37,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 @Slf4j
@@ -87,6 +93,8 @@ public class DiscordBot implements ApplicationRunner {
             .setEnabledIntents(IntentSet.of(Intent.GUILD_MEMBERS, Intent.GUILD_MESSAGES))
             .login()
             .block();
+
+//    dumpOgRoleIDs();
 
     if (client == null) {
       log.error("Unable to create Discord client");
@@ -212,6 +220,20 @@ public class DiscordBot implements ApplicationRunner {
         log.warn("Unable to post to channel: " + discordChannelId);
       }
     }
+  }
+
+  private void dumpOgRoleIDs() {
+    final var fromGuild = client.getGuildById(Snowflake.of(SMOL_GUILD_ID)).block();
+    final var membersAll = fromGuild.getMembers().collectList().block();
+
+    Set<String> members = new HashSet<>();
+    for (Member member : membersAll) {
+      if (member.getRoleIds().contains(Snowflake.of(899175139546116147L))) {
+        members.add(member.getId().asString());
+      }
+    }
+
+    log.info("OG ID's: " + members.stream().collect(Collectors.joining("\n")));
   }
 
   public int migrateRoles(Long fromGuildId, Long toGuildId, Long fromRole, Long toRole) {
