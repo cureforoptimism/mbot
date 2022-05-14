@@ -18,17 +18,18 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-
 @Component
 public class FriesCommand implements MbotCommand {
   private final Utilities utilities;
   private BufferedImage imgHat;
+  private BufferedImage imageBg;
 
   public FriesCommand(Utilities utilities) {
     this.utilities = utilities;
 
     try {
       this.imgHat = ImageIO.read(new ClassPathResource("mcds.png").getInputStream());
+      this.imageBg = ImageIO.read(new ClassPathResource("mcds_back.jpg").getInputStream());
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -72,6 +73,7 @@ public class FriesCommand implements MbotCommand {
                 imageSmol.getWidth(), imageSmol.getHeight(), BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = output.createGraphics();
         graphics.setComposite(AlphaComposite.SrcOver);
+        graphics.drawImage(imageBg, 0, 0, null);
         graphics.drawImage(imageSmol, 0, 0, null);
         graphics.drawImage(imgHat, 0, 0, null);
 
@@ -92,10 +94,7 @@ public class FriesCommand implements MbotCommand {
                               null,
                               "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
                           .image("attachment://" + tokenId + "mcds.png")
-                          .addField(
-                              "Notes",
-                              "Stay safe out there, frens. Much <3 from Cure",
-                              true)
+                          .addField("Notes", "Stay safe out there, frens. Much <3 from Cure", true)
                           .build();
 
                   return c.createMessage(
