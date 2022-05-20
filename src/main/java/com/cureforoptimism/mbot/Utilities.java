@@ -592,6 +592,8 @@ public class Utilities {
           case SMOL -> "smols";
           case VROOM -> "vrooms";
           case SMOL_BODY -> "smol_body";
+          case PET -> "pet";
+          case BODY_PET -> "bodypet";
           default -> "smols";
         };
 

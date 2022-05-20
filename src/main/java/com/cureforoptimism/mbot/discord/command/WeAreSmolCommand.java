@@ -179,7 +179,7 @@ public class WeAreSmolCommand implements MbotCommand {
         };
 
     try {
-      final var imageSmol = utilities.getImage(tokenId, smolType, false);
+      final var imageSmol = utilities.getSmolBufferedImage(tokenId, smolType, false).orElse(null);
       if (imageSmol == null) {
         return InteractionFollowupCreateSpec.builder()
             .addEmbed(
@@ -223,7 +223,7 @@ public class WeAreSmolCommand implements MbotCommand {
                   .build())
           .build();
 
-    } catch (URISyntaxException | IOException e) {
+    } catch (IOException e) {
       e.printStackTrace();
     }
 
