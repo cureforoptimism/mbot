@@ -180,6 +180,20 @@ public class WeAreSmolCommand implements MbotCommand {
 
     try {
       final var imageSmol = utilities.getImage(tokenId, smolType, false);
+      if (imageSmol == null) {
+        return InteractionFollowupCreateSpec.builder()
+            .addEmbed(
+                EmbedCreateSpec.builder()
+                    .title("EEEEEEEEE")
+                    .description(
+                        "Sorry! Too many people are requesting smols and the Smolverse is angry! Try again!")
+                    .author(
+                        "SmolBot",
+                        null,
+                        "https://www.smolverse.lol/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fsmol-brain-monkey.b82c9b83.png&w=64&q=75")
+                    .build())
+            .build();
+      }
 
       ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
