@@ -5,11 +5,10 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-
-import java.util.Optional;
 
 @Component
 @AllArgsConstructor

@@ -94,7 +94,7 @@ public class DiscordBot implements ApplicationRunner {
             .login()
             .block();
 
-//    dumpOgRoleIDs();
+    //    dumpOgRoleIDs();
 
     if (client == null) {
       log.error("Unable to create Discord client");

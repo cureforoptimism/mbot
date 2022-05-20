@@ -8,17 +8,16 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateFields.Footer;
 import discord4j.core.spec.EmbedCreateSpec;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
-
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 @AllArgsConstructor
 @Component
