@@ -1015,9 +1015,14 @@ public class Utilities {
       throws URISyntaxException, IOException {
     final var smolUri = new URI(getSmolImage(tokenId, smolType, forceSmolBrain).orElse(""));
 
-    var imageSmol = ImageIO.read(smolUri.toURL());
+    try {
+      var imageSmol = ImageIO.read(smolUri.toURL());
+      return imageSmol;
+    } catch (Exception ex) {
+      log.warn("Unable to retrieve smol: " + tokenId, ex);
+    }
 
-    return imageSmol;
+    return null;
   }
 
   public BufferedImage getTransparentImage(String tokenId, boolean forceSmolBrain)
