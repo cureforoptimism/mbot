@@ -622,7 +622,9 @@ public class Utilities {
                   .build();
 
           for (int retry = 0; retry <= 5; retry++) {
+            log.info("Requesting: " + request.uri().toString());
             final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            log.info("Response received: " + response.statusCode());
             if (response.statusCode() == 200) {
               log.info("Writing new cached object: " + path + "; try: " + (retry + 1));
               Files.write(path, response.body());
