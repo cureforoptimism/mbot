@@ -618,7 +618,7 @@ public class Utilities {
           HttpRequest request =
               HttpRequest.newBuilder()
                   .uri(new URI(imgOpt.get()))
-                  .timeout(Duration.ofMillis(2000))
+                  .timeout(Duration.ofMillis(20000))
                   .build();
 
           for (int retry = 0; retry <= 5; retry++) {
