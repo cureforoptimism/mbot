@@ -94,7 +94,7 @@ public class WeAreSmolCommand implements MbotCommand {
 
       try {
         final var imageSmol = utilities.getSmolBufferedImage(tokenId, smolType, false).orElse(null);
-        if(imageSmol == null) {
+        if (imageSmol == null) {
           log.warn("Unable to retrieve on ! command");
           return Mono.empty();
         }

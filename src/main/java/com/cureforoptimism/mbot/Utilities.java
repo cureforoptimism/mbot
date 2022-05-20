@@ -67,6 +67,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -614,7 +615,11 @@ public class Utilities {
       if (imgOpt.isPresent()) {
         try {
           HttpClient httpClient = HttpClient.newHttpClient();
-          HttpRequest request = HttpRequest.newBuilder().uri(new URI(imgOpt.get())).build();
+          HttpRequest request =
+              HttpRequest.newBuilder()
+                  .uri(new URI(imgOpt.get()))
+                  .timeout(Duration.ofMillis(2000))
+                  .build();
 
           for (int retry = 0; retry <= 5; retry++) {
             final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
@@ -626,6 +631,9 @@ public class Utilities {
               BufferedImage img = ImageIO.read(imgBytes);
 
               return Optional.of(img);
+            } else if (response.statusCode() == 504) {
+              log.warn("TIMEOUT; RETURN NOW");
+              return Optional.empty();
             } else {
               Thread.sleep(250);
               log.error("Unable to retrieve image (will retry): " + response.statusCode());
