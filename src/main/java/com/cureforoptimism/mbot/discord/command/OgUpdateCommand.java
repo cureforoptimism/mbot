@@ -32,19 +32,19 @@ public class OgUpdateCommand implements MbotCommand {
 
   @Override
   public Mono<Message> handle(MessageCreateEvent event) {
-//    final var migratedUsers =
-//        discordBot.migrateRoles(
-//            Constants.CFO_TEST_GUILD_ID,
-//            Constants.CFO_TEST_GUILD_ID,
-//            Constants.CFO_TEST_ROLE_ID_FROM,
-//            Constants.CFO_TEST_ROLE_ID_TO);
+    //    final var migratedUsers =
+    //        discordBot.migrateRoles(
+    //            Constants.CFO_TEST_GUILD_ID,
+    //            Constants.CFO_TEST_GUILD_ID,
+    //            Constants.CFO_TEST_ROLE_ID_FROM,
+    //            Constants.CFO_TEST_ROLE_ID_TO);
 
-        final var migratedUsers =
-            discordBot.migrateRoles(
-                Constants.SWOL_GUILD_ID,
-                Constants.SMOL_GUILD_ID,
-                Constants.SWOL_OG_ROLE_ID,
-                Constants.SMOL_OG_ROLE_ID);
+    final var migratedUsers =
+        discordBot.migrateRoles(
+            Constants.SWOL_GUILD_ID,
+            Constants.SMOL_GUILD_ID,
+            Constants.SWOL_OG_ROLE_ID,
+            Constants.SMOL_OG_ROLE_ID);
 
     return event
         .getMessage()

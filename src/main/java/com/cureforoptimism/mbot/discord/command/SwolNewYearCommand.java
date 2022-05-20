@@ -8,11 +8,6 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
-
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -24,6 +19,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import javax.imageio.ImageIO;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 @Component
 public class SwolNewYearCommand implements MbotCommand {
