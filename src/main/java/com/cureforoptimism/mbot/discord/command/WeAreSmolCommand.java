@@ -14,7 +14,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import javax.imageio.ImageIO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -94,7 +93,11 @@ public class WeAreSmolCommand implements MbotCommand {
           };
 
       try {
-        final var imageSmol = utilities.getImage(tokenId, smolType, false);
+        final var imageSmol = utilities.getSmolBufferedImage(tokenId, smolType, false).orElse(null);
+        if(imageSmol == null) {
+          log.warn("Unable to retrieve on ! command");
+          return Mono.empty();
+        }
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
@@ -135,7 +138,7 @@ public class WeAreSmolCommand implements MbotCommand {
                           .build());
                 });
 
-      } catch (URISyntaxException | IOException e) {
+      } catch (IOException e) {
         e.printStackTrace();
       }
     }
