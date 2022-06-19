@@ -207,21 +207,24 @@ public class SpringConfiguration {
   }
 
   @Bean
-  public RedisMessageListenerContainer listenerContainer(MessageListenerAdapter listenerAdapter,
-      RedisConnectionFactory connectionFactory) {
+  public RedisMessageListenerContainer listenerContainer(
+      MessageListenerAdapter listenerAdapter, RedisConnectionFactory connectionFactory) {
     RedisMessageListenerContainer container = new RedisMessageListenerContainer();
     container.setConnectionFactory(connectionFactory);
     container.addMessageListener(listenerAdapter, new PatternTopic("market-price"));
     return container;
   }
+
   @Bean
   public MessageListenerAdapter listenerAdapter(MarketPriceMessageSubscriber subscriber) {
     MessageListenerAdapter messageListenerAdapter = new MessageListenerAdapter(subscriber);
     messageListenerAdapter.setSerializer(new Jackson2JsonRedisSerializer<>(MarketPrice.class));
     return messageListenerAdapter;
   }
+
   @Bean
-  RedisTemplate<String, MarketPrice> redisTemplate(RedisConnectionFactory connectionFactory,
+  RedisTemplate<String, MarketPrice> redisTemplate(
+      RedisConnectionFactory connectionFactory,
       Jackson2JsonRedisSerializer<MarketPrice> serializer) {
     RedisTemplate<String, MarketPrice> redisTemplate = new RedisTemplate<>();
     redisTemplate.setConnectionFactory(connectionFactory);
@@ -229,6 +232,7 @@ public class SpringConfiguration {
     redisTemplate.afterPropertiesSet();
     return redisTemplate;
   }
+
   @Bean
   public Jackson2JsonRedisSerializer<MarketPrice> jackson2JsonRedisSerializer() {
     return new Jackson2JsonRedisSerializer<>(MarketPrice.class);
