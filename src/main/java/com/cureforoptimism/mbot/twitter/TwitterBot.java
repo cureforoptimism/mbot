@@ -7,7 +7,7 @@ import com.cureforoptimism.mbot.domain.SmolSale;
 import com.cureforoptimism.mbot.domain.SmolType;
 import com.cureforoptimism.mbot.repository.RarityRankRepository;
 import com.cureforoptimism.mbot.repository.SmolSalesRepository;
-import com.cureforoptimism.mbot.service.CoinGeckoService;
+import com.cureforoptimism.mbot.service.MarketPriceMessageSubscriber;
 import discord4j.core.spec.MessageCreateSpec;
 import io.github.redouane59.twitter.TwitterClient;
 import io.github.redouane59.twitter.dto.endpoints.AdditionalParameters;
@@ -26,7 +26,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import javax.imageio.ImageIO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -38,7 +37,7 @@ public class TwitterBot {
   private final TwitterClient twitterClient;
   private final SmolSalesRepository smolSalesRepository;
   private final DiscordBot discordBot;
-  private final CoinGeckoService coinGeckoService;
+  private final MarketPriceMessageSubscriber marketPriceMessageSubscriber;
   private final Utilities utilities;
   private final RarityRankRepository rarityRankRepository;
   private Date lastTweetedBlockTimestamp = null;
@@ -49,13 +48,13 @@ public class TwitterBot {
       TwitterClient twitterClient,
       SmolSalesRepository smolSalesRepository,
       DiscordBot discordBot,
-      CoinGeckoService coinGeckoService,
+      MarketPriceMessageSubscriber marketPriceMessageSubscriber,
       Utilities utilities,
       RarityRankRepository rarityRankRepository) {
     this.twitterClient = twitterClient;
     this.smolSalesRepository = smolSalesRepository;
     this.discordBot = discordBot;
-    this.coinGeckoService = coinGeckoService;
+    this.marketPriceMessageSubscriber = marketPriceMessageSubscriber;
     this.utilities = utilities;
     this.rarityRankRepository = rarityRankRepository;
 
@@ -135,11 +134,11 @@ public class TwitterBot {
         smolSalesRepository.findByBlockTimestampIsAfterAndTweetedIsFalseOrderByBlockTimestampAsc(
             lastTweetedBlockTimestamp);
     if (!newSales.isEmpty()) {
-      final Optional<Double> ethMktPriceOpt = coinGeckoService.getEthPrice();
-      if (ethMktPriceOpt.isEmpty()) {
+      if (marketPriceMessageSubscriber.getLastMarketPlace().getEthPrice() == null) {
         // This will retry once we have an ethereum price
         return;
       }
+      final Double ethMktPrice = marketPriceMessageSubscriber.getLastMarketPlace().getEthPrice();
       final NumberFormat decimalFormatZeroes = new DecimalFormat("#,###.00");
       final NumberFormat decimalFormatOptionalZeroes = new DecimalFormat("0.##");
       Double currentPrice = discordBot.getCurrentPrice();
@@ -149,7 +148,7 @@ public class TwitterBot {
 
         final BigDecimal usdPrice =
             smolSale.getSalePrice().multiply(BigDecimal.valueOf(currentPrice));
-        final Double ethPrice = usdPrice.doubleValue() / ethMktPriceOpt.get();
+        final Double ethPrice = usdPrice.doubleValue() / ethMktPrice;
         final String ethValue = decimalFormatOptionalZeroes.format(ethPrice);
         final String usdValue = decimalFormatZeroes.format(usdPrice);
 
