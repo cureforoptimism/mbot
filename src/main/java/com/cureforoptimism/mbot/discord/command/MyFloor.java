@@ -8,7 +8,7 @@ import com.cureforoptimism.mbot.Utilities;
 import com.cureforoptimism.mbot.application.DiscordBot;
 import com.cureforoptimism.mbot.domain.*;
 import com.cureforoptimism.mbot.repository.*;
-import com.cureforoptimism.mbot.service.CoinGeckoService;
+import com.cureforoptimism.mbot.service.MarketPriceMessageSubscriber;
 import com.cureforoptimism.mbot.service.TreasureService;
 import com.inamik.text.tables.SimpleTable;
 import com.smolbrains.*;
@@ -43,11 +43,11 @@ public class MyFloor implements MbotCommand {
   private final SmolBodiesContract smolBodiesContract;
   private final SmolBrainsVroomContract vroomContract;
   private final SmolLandContract smolLandContract;
-  private final CoinGeckoService coinGeckoService;
   private final PetsContract petsContract;
   private final BodyPetsContact bodyPetsContact;
   private final PetRepository petRepository;
   private final BodyPetRepository bodyPetRepository;
+  private final MarketPriceMessageSubscriber marketPriceMessageSubscriber;
 
   @Override
   public String getName() {
@@ -167,13 +167,12 @@ public class MyFloor implements MbotCommand {
     final var usdBodyPetFloor = bodyPetFloor.multiply(BigDecimal.valueOf(currentPrice));
 
     double ethMktPrice;
-    final Optional<Double> ethMktPriceOpt = coinGeckoService.getEthPrice();
-    if (ethMktPriceOpt.isEmpty()) {
+
+    if (marketPriceMessageSubscriber.getLastMarketPlace().getEthPrice() == null) {
       // This will retry once we have an ethereum price
       return null;
     }
-
-    ethMktPrice = ethMktPriceOpt.get();
+    ethMktPrice = marketPriceMessageSubscriber.getLastMarketPlace().getEthPrice();
 
     BigDecimal totalMagic = BigDecimal.ZERO;
     BigDecimal totalUsd = BigDecimal.ZERO;

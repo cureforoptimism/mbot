@@ -1,8 +1,8 @@
 package com.cureforoptimism.mbot;
 
+import com.cureforoptimism.mbot.domain.MarketPrice;
+import com.cureforoptimism.mbot.service.MarketPriceMessageSubscriber;
 import com.cureforoptimism.mbot.service.TokenService;
-import com.litesoftwares.coingecko.CoinGeckoApiClient;
-import com.litesoftwares.coingecko.impl.CoinGeckoApiClientImpl;
 import com.smolbrains.BodyPetsContact;
 import com.smolbrains.PetsContract;
 import com.smolbrains.SmolBodiesContract;
@@ -19,6 +19,12 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.listener.PatternTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.web3j.crypto.Credentials;
@@ -35,11 +41,6 @@ import org.web3j.tx.gas.DefaultGasProvider;
 @AllArgsConstructor
 public class SpringConfiguration {
   final TokenService tokenService;
-
-  @Bean
-  public CoinGeckoApiClient coinGeckoApiClient() {
-    return new CoinGeckoApiClientImpl();
-  }
 
   @Bean
   public Web3j web3j() {
@@ -196,5 +197,37 @@ public class SpringConfiguration {
             .apiKey(tokenService.getTwitterApiKey())
             .apiSecretKey(tokenService.getTwitterApiSecret())
             .build());
+  }
+
+  @Bean
+  public RedisMessageListenerContainer listenerContainer(
+      MessageListenerAdapter listenerAdapter, RedisConnectionFactory connectionFactory) {
+    RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+    container.setConnectionFactory(connectionFactory);
+    container.addMessageListener(listenerAdapter, new PatternTopic("market-price"));
+    return container;
+  }
+
+  @Bean
+  public MessageListenerAdapter listenerAdapter(MarketPriceMessageSubscriber subscriber) {
+    MessageListenerAdapter messageListenerAdapter = new MessageListenerAdapter(subscriber);
+    messageListenerAdapter.setSerializer(new Jackson2JsonRedisSerializer<>(MarketPrice.class));
+    return messageListenerAdapter;
+  }
+
+  @Bean
+  RedisTemplate<String, MarketPrice> redisTemplate(
+      RedisConnectionFactory connectionFactory,
+      Jackson2JsonRedisSerializer<MarketPrice> serializer) {
+    RedisTemplate<String, MarketPrice> redisTemplate = new RedisTemplate<>();
+    redisTemplate.setConnectionFactory(connectionFactory);
+    redisTemplate.setDefaultSerializer(serializer);
+    redisTemplate.afterPropertiesSet();
+    return redisTemplate;
+  }
+
+  @Bean
+  public Jackson2JsonRedisSerializer<MarketPrice> jackson2JsonRedisSerializer() {
+    return new Jackson2JsonRedisSerializer<>(MarketPrice.class);
   }
 }
