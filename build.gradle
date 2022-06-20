@@ -30,14 +30,9 @@ configurations {
 repositories {
     mavenCentral()
     maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
-
-    flatDir {
-        dirs 'libs'
-    }
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', includes: ['*.jar'])
     implementation 'org.apache.commons:commons-csv:1.9.0'
     implementation 'com.github.inamik.text.tables:inamik-text-tables:1.0-SNAPSHOT'
     implementation 'com.madgag:animated-gif-lib:1.4'

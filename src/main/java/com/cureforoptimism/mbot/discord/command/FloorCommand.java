@@ -5,8 +5,8 @@ import static com.inamik.text.tables.Cell.Functions.RIGHT_ALIGN;
 
 import com.cureforoptimism.mbot.Utilities;
 import com.cureforoptimism.mbot.application.DiscordBot;
-import com.cureforoptimism.mbot.service.CoinGeckoService;
 import com.cureforoptimism.mbot.service.FloorService;
+import com.cureforoptimism.mbot.service.MarketPriceMessageSubscriber;
 import com.cureforoptimism.mbot.service.TreasureService;
 import com.inamik.text.tables.SimpleTable;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -17,7 +17,6 @@ import discord4j.core.spec.InteractionFollowupCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
-import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -30,7 +29,7 @@ public class FloorCommand implements MbotCommand {
   final TreasureService treasureService;
   final DiscordBot discordBot;
   final FloorService floorService;
-  final CoinGeckoService coinGeckoService;
+  final MarketPriceMessageSubscriber marketPriceMessageSubscriber;
   private final Double yachtPrice = 10.0; // ETH
 
   private static class FloorResponse {
@@ -156,13 +155,11 @@ public class FloorCommand implements MbotCommand {
 
     double ethMktPrice = 0.0;
     if (includeEth) {
-      final Optional<Double> ethMktPriceOpt = coinGeckoService.getEthPrice();
-      if (ethMktPriceOpt.isEmpty()) {
+      if (marketPriceMessageSubscriber.getLastMarketPlace().getEthPrice() == null) {
         // This will retry once we have an ethereum price
         return null;
       }
-
-      ethMktPrice = ethMktPriceOpt.get();
+      ethMktPrice = marketPriceMessageSubscriber.getLastMarketPlace().getEthPrice();
 
       final var cheapestSmol =
           usdCheapestMale.doubleValue() < usdCheapestFemale.doubleValue()

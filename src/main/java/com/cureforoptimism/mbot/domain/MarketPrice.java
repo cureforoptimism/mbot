@@ -24,6 +24,10 @@ public class MarketPrice implements Serializable {
 
   private Double ethPrice;
   private Long marketCapRank;
+  private Double marketCap;
+  private Double circulatingSupply;
+  private Double totalSupply;
+  private Double maxSupply;
   private Double ath;
   private String athDate;
   private Double high24h;

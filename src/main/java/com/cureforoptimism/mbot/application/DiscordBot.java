@@ -81,7 +81,9 @@ public class DiscordBot implements ApplicationRunner {
     currentVolume4h = volume4h;
     currentVolume1h = volume1h;
 
-    client.getEventDispatcher().publish(new RefreshEvent(null, null));
+    if (client != null) {
+      client.getEventDispatcher().publish(new RefreshEvent(null, null));
+    }
   }
 
   @Override

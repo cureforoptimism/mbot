@@ -1,8 +1,8 @@
 package com.cureforoptimism.mbot.discord.command;
 
 import com.cureforoptimism.mbot.application.DiscordBot;
-import com.cureforoptimism.mbot.service.CoinGeckoService;
-import com.litesoftwares.coingecko.domain.Coins.CoinFullData;
+import com.cureforoptimism.mbot.domain.MarketPrice;
+import com.cureforoptimism.mbot.service.MarketPriceMessageSubscriber;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
@@ -24,7 +24,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class MagicCommand implements MbotCommand {
   private final DiscordBot discordBot;
-  private final CoinGeckoService coinGeckoService;
+  private final MarketPriceMessageSubscriber marketPriceMessageSubscriber;
 
   @Override
   public String getName() {
@@ -58,10 +58,9 @@ public class MagicCommand implements MbotCommand {
   }
 
   private EmbedCreateSpec getMagicEmbed() {
-    CoinFullData coinData = coinGeckoService.getCoinFullData();
-
+    MarketPrice marketPrice = marketPriceMessageSubscriber.getLastMarketPlace();
     DecimalFormat decimalFormat = new DecimalFormat("#.00");
-    final Instant athDate = Instant.parse(coinData.getMarketData().getAthDate().get("usd"));
+    final Instant athDate = Instant.parse(marketPrice.getAthDate());
     final long daysSinceAth =
         ChronoUnit.DAYS.between(
             LocalDate.ofInstant(athDate, ZoneId.systemDefault()), LocalDate.now());
@@ -70,43 +69,40 @@ public class MagicCommand implements MbotCommand {
         .title("MAGIC - $" + discordBot.getCurrentPrice())
         .description(
             "MC Rank: #"
-                + coinData.getMarketCapRank()
+                + marketPrice.getMarketCapRank()
                 + "\n"
                 + "Market cap: $"
-                + NumberFormat.getIntegerInstance()
-                    .format(coinData.getMarketData().getMarketCap().get("usd"))
+                + NumberFormat.getIntegerInstance().format(marketPrice.getMarketCap())
                 + "\n"
                 + "24 hour volume: $"
                 + NumberFormat.getIntegerInstance().format(discordBot.getCurrentVolume24h())
                 + "\n"
                 + "In circulation: "
-                + NumberFormat.getIntegerInstance()
-                    .format(coinData.getMarketData().getCirculatingSupply())
+                + NumberFormat.getIntegerInstance().format(marketPrice.getCirculatingSupply())
                 + " MAGIC\n"
                 + "Total supply: "
-                + NumberFormat.getIntegerInstance()
-                    .format(coinData.getMarketData().getTotalSupply())
+                + NumberFormat.getIntegerInstance().format(marketPrice.getTotalSupply())
                 + " MAGIC\n"
                 + "Max supply: "
-                + NumberFormat.getIntegerInstance().format(coinData.getMarketData().getMaxSupply())
+                + NumberFormat.getIntegerInstance().format(marketPrice.getMaxSupply())
                 + " MAGIC\n"
                 + "All time high: $"
-                + decimalFormat.format(coinData.getMarketData().getAth().get("usd"))
+                + decimalFormat.format(marketPrice.getAth())
                 + (daysSinceAth == 0 ? " (Today)" : " (" + daysSinceAth + " days ago)")
                 + "\n24hr high/low: $"
-                + decimalFormat.format(coinData.getMarketData().getHigh24h().get("usd"))
+                + decimalFormat.format(marketPrice.getHigh24h())
                 + " / $"
-                + decimalFormat.format(coinData.getMarketData().getLow24h().get("usd")))
+                + decimalFormat.format(marketPrice.getLow24h()))
         .addField(
             "Current Prices",
             "USD: `"
                 + discordBot.getCurrentPrice()
                 + "`\n"
                 + "ETH: `"
-                + String.format("`%.6f`", coinData.getMarketData().getCurrentPrice().get("eth"))
+                + String.format("`%.6f`", marketPrice.getPriceInEth())
                 + "`\n"
                 + "BTC: `"
-                + String.format("`%.8f`", coinData.getMarketData().getCurrentPrice().get("btc"))
+                + String.format("`%.8f`", marketPrice.getPriceInBtc())
                 + "`\n",
             true)
         .addField(
@@ -118,10 +114,10 @@ public class MagicCommand implements MbotCommand {
                 + String.format("`%.2f%%`", discordBot.getCurrentChange())
                 + "`\n"
                 + "7d: `"
-                + String.format("`%.2f%%`", coinData.getMarketData().getPriceChangePercentage7d())
+                + String.format("`%.2f%%`", marketPrice.getPriceChangePercentage7d())
                 + "`\n"
                 + "1m: `"
-                + String.format("`%.2f%%`", coinData.getMarketData().getPriceChangePercentage30d())
+                + String.format("`%.2f%%`", marketPrice.getPriceChangePercentage30d())
                 + "`\n",
             true)
         .thumbnail("https://assets.coingecko.com/coins/images/18623/large/Magic.png?1635755672")

@@ -13,8 +13,7 @@ import org.springframework.stereotype.Component;
 public class MarketPriceMessageSubscriber {
   private final DiscordBot discordBot;
 
-  @Getter
-  private MarketPrice lastMarketPlace;
+  @Getter private MarketPrice lastMarketPlace;
 
   public void handleMessage(MarketPrice marketPrice) {
     lastMarketPlace = marketPrice;

@@ -3,8 +3,6 @@ package com.cureforoptimism.mbot;
 import com.cureforoptimism.mbot.domain.MarketPrice;
 import com.cureforoptimism.mbot.service.MarketPriceMessageSubscriber;
 import com.cureforoptimism.mbot.service.TokenService;
-import com.litesoftwares.coingecko.CoinGeckoApiClient;
-import com.litesoftwares.coingecko.impl.CoinGeckoApiClientImpl;
 import com.smolbrains.BodyPetsContact;
 import com.smolbrains.PetsContract;
 import com.smolbrains.SmolBodiesContract;
@@ -43,11 +41,6 @@ import org.web3j.tx.gas.DefaultGasProvider;
 @AllArgsConstructor
 public class SpringConfiguration {
   final TokenService tokenService;
-
-  @Bean
-  public CoinGeckoApiClient coinGeckoApiClient() {
-    return new CoinGeckoApiClientImpl();
-  }
 
   @Bean
   public Web3j web3j() {
