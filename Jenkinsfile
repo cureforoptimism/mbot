@@ -1,7 +1,7 @@
 pipeline {
    agent any
    environment {
-       registry = "labmain:32000/mbot"
+       registry = "10.43.42.150:5000/mbot"
    }
    stages {
        stage('Build Dockerfile and Publish') {
@@ -24,7 +24,7 @@ pipeline {
       stage ('Deploy') {
            steps {
                script{
-                   def image_id = "localhost:32000/mbot" + ":$BUILD_NUMBER"
+                   def image_id = "10.43.42.150:5000/mbot" + ":$BUILD_NUMBER"
                    sh "ansible-playbook  playbook.yml --extra-vars \"image=${image_id}\""
                }
            }
