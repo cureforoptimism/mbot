@@ -28,7 +28,7 @@
                 - name: REDIS_PORT
                   value: "6379"
                 - name: REDIS_PASSWORD
-                  value: "n1c2S8NpK3"
+                  value: "a8ElD0aWae"
                 volumeMounts:
                 - name: mbot-persistent-storage
                   mountPath: /mbot/img_cache
