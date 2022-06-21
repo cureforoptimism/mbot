@@ -585,14 +585,11 @@ public class TreasureService {
       }
 
       if(cheapestMale == null) {
-        cheapestMale = new BigDecimal(999999);
+        cheapestMale = new BigDecimal(0);
+        floor = cheapestFemale;
+      } else {
+        floor = cheapestMale.compareTo(cheapestFemale) > 0 ? cheapestFemale : cheapestMale;
       }
-
-      if(cheapestFemale == null) {
-        cheapestFemale = new BigDecimal(999999);
-      }
-
-      floor = cheapestMale.compareTo(cheapestFemale) > 0 ? cheapestFemale : cheapestMale;
 
       // Get total listings
       jsonBody =
