@@ -584,6 +584,14 @@ public class TreasureService {
         log.warn("Error parsing treasure response", ex);
       }
 
+      if(cheapestMale == null) {
+        cheapestMale = new BigDecimal(999999);
+      }
+
+      if(cheapestFemale == null) {
+        cheapestFemale = new BigDecimal(999999);
+      }
+
       floor = cheapestMale.compareTo(cheapestFemale) > 0 ? cheapestFemale : cheapestMale;
 
       // Get total listings
