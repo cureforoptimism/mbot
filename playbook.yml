@@ -24,7 +24,7 @@
                 - name: MYSQL_PORT
                   value: "3306"
                 - name: REDIS_HOST
-                  value: redis-1655768572-master-0
+                  value: redis-master
                 - name: REDIS_PORT
                   value: "6379"
                 - name: REDIS_PASSWORD
