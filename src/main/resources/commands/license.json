@@ -1,0 +1,35 @@
+{
+  "name": "license",
+  "description": "Vroom vroom!",
+  "options": [
+    {
+      "name": "id",
+      "description": "Smol/Swol/Pet/Swolpet ID",
+      "type": 4,
+      "required": true
+    },
+    {
+      "name": "type",
+      "description": "Pick whether this is for a smol, swol, smol pet, or swol pet",
+      "type": 3,
+      "choices": [
+        {
+          "name": "smol",
+          "value": "smol"
+        },
+        {
+          "name": "swol",
+          "value": "swol"
+        },
+        {
+          "name": "smolpet",
+          "value": "smolpet"
+        },
+        {
+          "name": "swolpet",
+          "value": "swolpet"
+        }
+      ]
+    }
+  ]
+}

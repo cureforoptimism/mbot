@@ -588,6 +588,11 @@ public class Utilities {
 
   public Optional<BufferedImage> getSmolBufferedImage(
       String id, SmolType smolType, boolean forceSmolBrain) {
+    return getSmolBufferedImage(id, smolType, forceSmolBrain, false);
+  }
+
+  public Optional<BufferedImage> getSmolBufferedImage(
+      String id, SmolType smolType, boolean forceSmolBrain, boolean forceSwolBody) {
     final var pathPiece =
         switch (smolType) {
           case SMOL -> "smols";
@@ -598,7 +603,12 @@ public class Utilities {
           default -> "smols";
         };
 
-    final int brainSize = forceSmolBrain ? 0 : getSmolBrainSize(id);
+    int brainSize = forceSmolBrain ? 0 : getSmolBrainSize(id);
+
+    if (smolType == SmolType.SMOL_BODY) {
+      brainSize = forceSwolBody ? 6 : 0;
+    }
+
     final Path path = Paths.get("img_cache", pathPiece, id + "_" + brainSize + ".png");
     if (path.toFile().exists()) {
       // Read
@@ -611,13 +621,15 @@ public class Utilities {
       }
     } else {
       // Fetch and write
-      final var imgOpt = getSmolImage(id, smolType, forceSmolBrain);
+      final var imgOpt = getSmolImage(id, smolType, forceSmolBrain, forceSwolBody);
       if (imgOpt.isPresent()) {
         try {
+          String ipfsImage = imgOpt.get().replace("ipfs://", "https://gateway.pinata.cloud/ipfs/");
+
           HttpClient httpClient = HttpClient.newHttpClient();
           HttpRequest request =
               HttpRequest.newBuilder()
-                  .uri(new URI(imgOpt.get()))
+                  .uri(new URI(ipfsImage))
                   .timeout(Duration.ofMillis(20000))
                   .build();
 
@@ -679,6 +691,11 @@ public class Utilities {
 
   // TODO: Get rid of this forceSmolBrains arg ASAP (adjust santa command)
   public Optional<String> getSmolImage(String id, SmolType smolType, boolean forceSmolBrain) {
+    return getSmolImage(id, smolType, forceSmolBrain, false);
+  }
+
+  public Optional<String> getSmolImage(
+      String id, SmolType smolType, boolean forceSmolBrain, boolean forceSwolBody) {
     // SPECIAL CASE: All pets seem to live under the same IPFS bucket, hardcoded here. We can just
     // return this gif for now (until we can't).
     if (smolType == SmolType.PET) {
@@ -708,7 +725,7 @@ public class Utilities {
                 .GET()
                 .build();
             case SMOL_BODY -> HttpRequest.newBuilder()
-                .uri(new URI(this.smolBodyBaseUri + id + "/0"))
+                .uri(new URI(this.smolBodyBaseUri + id + (forceSwolBody ? "/6" : "/0")))
                 .GET()
                 .build();
             default -> null;
@@ -1039,11 +1056,12 @@ public class Utilities {
 
   public BufferedImage getTransparentImage(String tokenId, boolean forceSmolBrain)
       throws URISyntaxException, IOException {
-    final var smolUri = new URI(getSmolImage(tokenId, SmolType.SMOL, forceSmolBrain).orElse(""));
+    final var imageSmol = getSmolBufferedImage(tokenId, SmolType.SMOL, true);
+    if (imageSmol.isEmpty()) {
+      throw new IOException("unable to retrieve SMOL");
+    }
 
-    var imageSmol = ImageIO.read(smolUri.toURL());
-
-    final var transparentColor = imageSmol.getRGB(0, 0);
+    final var transparentColor = imageSmol.get().getRGB(0, 0);
     ImageFilter imageFilter =
         new RGBImageFilter() {
           @Override
@@ -1056,7 +1074,7 @@ public class Utilities {
           }
         };
 
-    ImageProducer imageProducer = new FilteredImageSource(imageSmol.getSource(), imageFilter);
+    ImageProducer imageProducer = new FilteredImageSource(imageSmol.get().getSource(), imageFilter);
     Image imgSmol = Toolkit.getDefaultToolkit().createImage(imageProducer);
 
     BufferedImage transparentImg =
