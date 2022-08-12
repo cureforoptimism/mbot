@@ -489,63 +489,7 @@ public class TreasureService {
     MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
 
     try {
-      //      String timestampGte = Long.toString((System.currentTimeMillis() / 1000) - (60 *
-      // 1000));
-      //
-      // First, we need to get the list of tokenIds (collection + random identifier)
-      //      String jsonBody =
-      //          "{\"query\":\"query getActivity($first: Int!, $skip: Int, $includeListings:
-      // Boolean!, $includeSales: Boolean!, $includeBids: Boolean!, $listingFilter: Listing_filter,
-      // $listingOrderBy: Listing_orderBy, $bidFilter: Bid_filter, $bidOrderBy: Bid_orderBy,
-      // $saleFilter: Sale_filter, $saleOrderBy: Sale_orderBy, $orderDirection: OrderDirection) {\\n
-      //  listings(\\n    first: $first\\n    where: $listingFilter\\n    orderBy:
-      // $listingOrderBy\\n    orderDirection: $orderDirection\\n    skip: $skip\\n  ) @include(if:
-      // $includeListings) {\\n    ...ListingFields\\n  }\\n  bids(\\n    first: $first\\n    where:
-      // $bidFilter\\n    orderBy: $bidOrderBy\\n    orderDirection: $orderDirection\\n    skip:
-      // $skip\\n  ) @include(if: $includeBids) {\\n    ...BidFields\\n  }\\n  sales(\\n    first:
-      // $first\\n    where: $saleFilter\\n    orderBy: $saleOrderBy\\n    orderDirection:
-      // $orderDirection\\n    skip: $skip\\n  ) @include(if: $includeSales) {\\n
-      // ...SaleFields\\n  }\\n}\\n\\nfragment ListingFields on Listing {\\n  timestamp\\n  id\\n
-      // pricePerItem\\n  quantity\\n  seller {\\n    id\\n  }\\n  token {\\n    id\\n    tokenId\\n
-      //  }\\n  collection {\\n    id\\n  }\\n  currency {\\n    id\\n  }\\n  status\\n
-      // expiresAt\\n}\\n\\nfragment BidFields on Bid {\\n  timestamp\\n  id\\n  pricePerItem\\n
-      // quantity\\n  token {\\n    id\\n    tokenId\\n  }\\n  collection {\\n    id\\n  }\\n
-      // currency {\\n    id\\n  }\\n  buyer {\\n    id\\n  }\\n  status\\n  expiresAt\\n
-      // bidType\\n}\\n\\nfragment SaleFields on Sale {\\n  timestamp\\n  id\\n  pricePerItem\\n
-      // quantity\\n  type\\n  seller {\\n    id\\n  }\\n  buyer {\\n    id\\n  }\\n  token {\\n
-      // id\\n    tokenId\\n  }\\n  collection {\\n    id\\n  }\\n  currency {\\n    id\\n
-      // }\\n}\",\"variables\":{\"skip\":0,\"first\":20,\"listingOrderBy\":\"timestamp\",\"saleOrderBy\":\"timestamp\",\"bidOrderBy\":\"timestamp\",\"listingFilter\":{\"collection\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\",\"timestamp_gte\":" + timestampGte + ",\"status_in\":[\"ACTIVE\"]},\"bidFilter\":{\"collection\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\",\"timestamp_gte\":" + timestampGte + ",\"status_in\":[\"ACTIVE\",\"EXPIRED\"]},\"saleFilter\":{\"collection\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\",\"timestamp_gte\":" + timestampGte + "},\"orderDirection\":\"desc\",\"includeListings\":true,\"includeSales\":true,\"includeBids\":true},\"operationName\":\"getActivity\"}";
-      //      String jsonBody = "{\"query\":\"query getActivity($first: Int!, $skip: Int,
-      // $includeListings: Boolean!, $includeSales: Boolean!, $includeBids: Boolean!,
-      // $listingFilter: Listing_filter, $listingOrderBy: Listing_orderBy, $bidFilter: Bid_filter,
-      // $bidOrderBy: Bid_orderBy, $saleFilter: Sale_filter, $saleOrderBy: Sale_orderBy,
-      // $orderDirection: OrderDirection) {\\n  listings(\\n    first: $first\\n    where:
-      // $listingFilter\\n    orderBy: $listingOrderBy\\n    orderDirection: $orderDirection\\n
-      // skip: $skip\\n  ) @include(if: $includeListings) {\\n    ...ListingFields\\n  }\\n
-      // bids(\\n    first: $first\\n    where: $bidFilter\\n    orderBy: $bidOrderBy\\n
-      // orderDirection: $orderDirection\\n    skip: $skip\\n  ) @include(if: $includeBids) {\\n
-      // ...BidFields\\n  }\\n  sales(\\n    first: $first\\n    where: $saleFilter\\n    orderBy:
-      // $saleOrderBy\\n    orderDirection: $orderDirection\\n    skip: $skip\\n  ) @include(if:
-      // $includeSales) {\\n    ...SaleFields\\n  }\\n}\\n\\nfragment ListingFields on Listing {\\n
-      // timestamp\\n  id\\n  pricePerItem\\n  quantity\\n  seller {\\n    id\\n  }\\n  token {\\n
-      //  id\\n    tokenId\\n  }\\n  collection {\\n    id\\n  }\\n  currency {\\n    id\\n  }\\n
-      // status\\n  expiresAt\\n}\\n\\nfragment BidFields on Bid {\\n  timestamp\\n  id\\n
-      // pricePerItem\\n  quantity\\n  token {\\n    id\\n    tokenId\\n  }\\n  collection {\\n
-      // id\\n  }\\n  currency {\\n    id\\n  }\\n  buyer {\\n    id\\n  }\\n  status\\n
-      // expiresAt\\n  bidType\\n}\\n\\nfragment SaleFields on Sale {\\n  timestamp\\n  id\\n
-      // pricePerItem\\n  quantity\\n  type\\n  seller {\\n    id\\n  }\\n  buyer {\\n    id\\n
-      // }\\n  token {\\n    id\\n    tokenId\\n  }\\n  collection {\\n    id\\n  }\\n  currency
-      // {\\n    id\\n
-      // }\\n}\",\"variables\":{\"skip\":0,\"first\":20,\"listingOrderBy\":\"timestamp\",\"saleOrderBy\":\"timestamp\",\"bidOrderBy\":\"timestamp\",\"listingFilter\":{\"collection\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\",\"timestamp_gte\":1660277009,\"status_in\":[\"ACTIVE\"]},\"bidFilter\":{\"collection\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\",\"timestamp_gte\":1660277009,\"status_in\":[\"ACTIVE\",\"EXPIRED\"]},\"saleFilter\":{\"collection\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\",\"timestamp_gte\":1660277009},\"orderDirection\":\"desc\",\"includeListings\":true,\"includeSales\":true,\"includeBids\":true},\"operationName\":\"getActivity\"}";
-
       HttpClient httpClient = HttpClient.newHttpClient();
-      //      HttpRequest request =
-      //          HttpRequest.newBuilder(
-      //                  new
-      // URI("https://api.thegraph.com/subgraphs/name/vinnytreasure/treasuremarketplace-fast-prod"))
-      //              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-      //              .header("Content-Type", "application/json")
-      //              .build();
       HttpRequest request =
           HttpRequest.newBuilder(
                   new URI(
