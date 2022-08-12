@@ -97,6 +97,8 @@ public class FloorCommand implements MbotCommand {
   public Mono<Void> handle(ChatInputInteractionEvent event) {
     log.info("/floor command received");
 
+    event.deferReply().block();
+
     // TODO: True
     FloorResponse floorResponse = getFloorMessage(true);
     if (floorResponse == null) {
@@ -104,20 +106,17 @@ public class FloorCommand implements MbotCommand {
     }
 
     event
-        .deferReply()
-        .then(
-            event.createFollowup(
-                InteractionFollowupCreateSpec.builder()
-                    .addFile(
-                        "floor.png",
-                        new ByteArrayInputStream(floorService.getCurrentFloorImageBytes()))
-                    .addFile(
-                        "floor_usd.png",
-                        new ByteArrayInputStream(floorService.getCurrentFloorUsdImageBytes()))
-                    .addEmbed(floorResponse.floorMagicEmbed)
-                    .addEmbed(floorResponse.floorUsdEmbed)
-                    .addEmbed(floorResponse.floorEmbed)
-                    .build()))
+        .createFollowup(
+            InteractionFollowupCreateSpec.builder()
+                .addFile(
+                    "floor.png", new ByteArrayInputStream(floorService.getCurrentFloorImageBytes()))
+                .addFile(
+                    "floor_usd.png",
+                    new ByteArrayInputStream(floorService.getCurrentFloorUsdImageBytes()))
+                .addEmbed(floorResponse.floorMagicEmbed)
+                .addEmbed(floorResponse.floorUsdEmbed)
+                .addEmbed(floorResponse.floorEmbed)
+                .build())
         .block();
 
     return Mono.empty();
