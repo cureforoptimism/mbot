@@ -486,105 +486,115 @@ public class TreasureService {
   @Scheduled(fixedDelay = 60000)
   public void getFloorPrice() {
     List<String> tokenListings = new ArrayList<>();
+    MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
 
     try {
+      //      String timestampGte = Long.toString((System.currentTimeMillis() / 1000) - (60 *
+      // 1000));
+      //
       // First, we need to get the list of tokenIds (collection + random identifier)
-      String jsonBody =
-          "{\"query\":\"query getCollectionsListedTokens($collection: String!) {\\n  listings(\\n    first: 1000\\n    where: {collection: $collection, status: Active, quantity_gt: 0}\\n    orderBy: id\\n  ) {\\n    token {\\n      id\\n    }\\n  }\\n}\",\"variables\":{\"collection\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\"},\"operationName\":\"getCollectionsListedTokens\"}";
+      //      String jsonBody =
+      //          "{\"query\":\"query getActivity($first: Int!, $skip: Int, $includeListings:
+      // Boolean!, $includeSales: Boolean!, $includeBids: Boolean!, $listingFilter: Listing_filter,
+      // $listingOrderBy: Listing_orderBy, $bidFilter: Bid_filter, $bidOrderBy: Bid_orderBy,
+      // $saleFilter: Sale_filter, $saleOrderBy: Sale_orderBy, $orderDirection: OrderDirection) {\\n
+      //  listings(\\n    first: $first\\n    where: $listingFilter\\n    orderBy:
+      // $listingOrderBy\\n    orderDirection: $orderDirection\\n    skip: $skip\\n  ) @include(if:
+      // $includeListings) {\\n    ...ListingFields\\n  }\\n  bids(\\n    first: $first\\n    where:
+      // $bidFilter\\n    orderBy: $bidOrderBy\\n    orderDirection: $orderDirection\\n    skip:
+      // $skip\\n  ) @include(if: $includeBids) {\\n    ...BidFields\\n  }\\n  sales(\\n    first:
+      // $first\\n    where: $saleFilter\\n    orderBy: $saleOrderBy\\n    orderDirection:
+      // $orderDirection\\n    skip: $skip\\n  ) @include(if: $includeSales) {\\n
+      // ...SaleFields\\n  }\\n}\\n\\nfragment ListingFields on Listing {\\n  timestamp\\n  id\\n
+      // pricePerItem\\n  quantity\\n  seller {\\n    id\\n  }\\n  token {\\n    id\\n    tokenId\\n
+      //  }\\n  collection {\\n    id\\n  }\\n  currency {\\n    id\\n  }\\n  status\\n
+      // expiresAt\\n}\\n\\nfragment BidFields on Bid {\\n  timestamp\\n  id\\n  pricePerItem\\n
+      // quantity\\n  token {\\n    id\\n    tokenId\\n  }\\n  collection {\\n    id\\n  }\\n
+      // currency {\\n    id\\n  }\\n  buyer {\\n    id\\n  }\\n  status\\n  expiresAt\\n
+      // bidType\\n}\\n\\nfragment SaleFields on Sale {\\n  timestamp\\n  id\\n  pricePerItem\\n
+      // quantity\\n  type\\n  seller {\\n    id\\n  }\\n  buyer {\\n    id\\n  }\\n  token {\\n
+      // id\\n    tokenId\\n  }\\n  collection {\\n    id\\n  }\\n  currency {\\n    id\\n
+      // }\\n}\",\"variables\":{\"skip\":0,\"first\":20,\"listingOrderBy\":\"timestamp\",\"saleOrderBy\":\"timestamp\",\"bidOrderBy\":\"timestamp\",\"listingFilter\":{\"collection\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\",\"timestamp_gte\":" + timestampGte + ",\"status_in\":[\"ACTIVE\"]},\"bidFilter\":{\"collection\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\",\"timestamp_gte\":" + timestampGte + ",\"status_in\":[\"ACTIVE\",\"EXPIRED\"]},\"saleFilter\":{\"collection\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\",\"timestamp_gte\":" + timestampGte + "},\"orderDirection\":\"desc\",\"includeListings\":true,\"includeSales\":true,\"includeBids\":true},\"operationName\":\"getActivity\"}";
+      //      String jsonBody = "{\"query\":\"query getActivity($first: Int!, $skip: Int,
+      // $includeListings: Boolean!, $includeSales: Boolean!, $includeBids: Boolean!,
+      // $listingFilter: Listing_filter, $listingOrderBy: Listing_orderBy, $bidFilter: Bid_filter,
+      // $bidOrderBy: Bid_orderBy, $saleFilter: Sale_filter, $saleOrderBy: Sale_orderBy,
+      // $orderDirection: OrderDirection) {\\n  listings(\\n    first: $first\\n    where:
+      // $listingFilter\\n    orderBy: $listingOrderBy\\n    orderDirection: $orderDirection\\n
+      // skip: $skip\\n  ) @include(if: $includeListings) {\\n    ...ListingFields\\n  }\\n
+      // bids(\\n    first: $first\\n    where: $bidFilter\\n    orderBy: $bidOrderBy\\n
+      // orderDirection: $orderDirection\\n    skip: $skip\\n  ) @include(if: $includeBids) {\\n
+      // ...BidFields\\n  }\\n  sales(\\n    first: $first\\n    where: $saleFilter\\n    orderBy:
+      // $saleOrderBy\\n    orderDirection: $orderDirection\\n    skip: $skip\\n  ) @include(if:
+      // $includeSales) {\\n    ...SaleFields\\n  }\\n}\\n\\nfragment ListingFields on Listing {\\n
+      // timestamp\\n  id\\n  pricePerItem\\n  quantity\\n  seller {\\n    id\\n  }\\n  token {\\n
+      //  id\\n    tokenId\\n  }\\n  collection {\\n    id\\n  }\\n  currency {\\n    id\\n  }\\n
+      // status\\n  expiresAt\\n}\\n\\nfragment BidFields on Bid {\\n  timestamp\\n  id\\n
+      // pricePerItem\\n  quantity\\n  token {\\n    id\\n    tokenId\\n  }\\n  collection {\\n
+      // id\\n  }\\n  currency {\\n    id\\n  }\\n  buyer {\\n    id\\n  }\\n  status\\n
+      // expiresAt\\n  bidType\\n}\\n\\nfragment SaleFields on Sale {\\n  timestamp\\n  id\\n
+      // pricePerItem\\n  quantity\\n  type\\n  seller {\\n    id\\n  }\\n  buyer {\\n    id\\n
+      // }\\n  token {\\n    id\\n    tokenId\\n  }\\n  collection {\\n    id\\n  }\\n  currency
+      // {\\n    id\\n
+      // }\\n}\",\"variables\":{\"skip\":0,\"first\":20,\"listingOrderBy\":\"timestamp\",\"saleOrderBy\":\"timestamp\",\"bidOrderBy\":\"timestamp\",\"listingFilter\":{\"collection\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\",\"timestamp_gte\":1660277009,\"status_in\":[\"ACTIVE\"]},\"bidFilter\":{\"collection\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\",\"timestamp_gte\":1660277009,\"status_in\":[\"ACTIVE\",\"EXPIRED\"]},\"saleFilter\":{\"collection\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\",\"timestamp_gte\":1660277009},\"orderDirection\":\"desc\",\"includeListings\":true,\"includeSales\":true,\"includeBids\":true},\"operationName\":\"getActivity\"}";
 
       HttpClient httpClient = HttpClient.newHttpClient();
+      //      HttpRequest request =
+      //          HttpRequest.newBuilder(
+      //                  new
+      // URI("https://api.thegraph.com/subgraphs/name/vinnytreasure/treasuremarketplace-fast-prod"))
+      //              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+      //              .header("Content-Type", "application/json")
+      //              .build();
       HttpRequest request =
           HttpRequest.newBuilder(
-                  new URI("https://api.thegraph.com/subgraphs/name/treasureproject/marketplace"))
-              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                  new URI(
+                      "https://hfihu314z3.execute-api.us-east-1.amazonaws.com/collection/arb/smol-brains/tokens?offset=0&limit=25&sort_by=price&order=asc&traits=Gender:male"))
+              .GET()
               .header("Content-Type", "application/json")
               .build();
 
+      // Get cheapest male
       try {
         HttpResponse<String> response =
             httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        JSONArray listings =
-            new JSONObject(response.body()).getJSONObject("data").getJSONArray("listings");
-        for (int x = 0; x < listings.length(); x++) {
-          String tokenId = listings.getJSONObject(x).getJSONObject("token").getString("id");
-          tokenListings.add(tokenId);
-        }
+        JSONArray tokens = new JSONObject(response.body()).getJSONArray("tokens");
+
+        final var price =
+            tokens.getJSONObject(0).getJSONObject("priceSummary").getBigInteger("floorPrice");
+        final var tokenId = tokens.getJSONObject(0).getInt("tokenId");
+
+        this.cheapestMale = new BigDecimal(price, 18, mc);
+        this.cheapestMaleId = tokenId;
       } catch (InterruptedException | JSONException ex) {
         log.warn("Error parsing treasure response", ex);
       }
 
-      // Join the tokenId's for the next graphql filter (poor man's join)
-      StringBuilder joined = new StringBuilder();
-      joined.append("\"");
-      for (String tokenId : tokenListings) {
-        joined.append(tokenId).append("\",\"");
-      }
-
-      // Chop of trailing ,"
-      String tokenIds = joined.substring(0, joined.length() - 2);
-
-      jsonBody =
-          "{\"query\":\"query getCollectionListings($erc1155Filters: Token_filter, $erc1155Ordering: Token_orderBy, $erc721Filters: Listing_filter, $erc721Ordering: Listing_orderBy, $isERC1155: Boolean!, $orderDirection: OrderDirection, $skip: Int) {\\n  tokens(\\n    first: 200\\n    orderBy: floorPrice\\n    orderDirection: $orderDirection\\n    where: $erc1155Filters\\n  ) @include(if: $isERC1155) {\\n    __typename\\n    id\\n    floorPrice\\n    tokenId\\n    listings(where: {status: Active, quantity_gt: 0}, orderBy: pricePerItem) {\\n      pricePerItem\\n      quantity\\n    }\\n  }\\n  listings(\\n    first: 42\\n    orderBy: $erc721Ordering\\n    orderDirection: $orderDirection\\n    skip: $skip\\n    where: $erc721Filters\\n  ) @skip(if: $isERC1155) {\\n    __typename\\n    seller {\\n      id\\n    }\\n    expires\\n    id\\n    pricePerItem\\n    token {\\n      id\\n      tokenId\\n      name\\n    }\\n    quantity\\n  }\\n}\",\"variables\":{\"erc1155Filters\":{\"id_in\":[";
-      jsonBody += tokenIds;
-      jsonBody += "]},\"erc721Filters\":{\"status\":\"Active\",\"token_in\":[";
-      jsonBody += tokenIds;
-      jsonBody +=
-          "],\"quantity_gt\":0},\"erc721Ordering\":\"pricePerItem\",\"isERC1155\":false,\"orderDirection\":\"asc\",\"skip\":0},\"operationName\":\"getCollectionListings\"}";
-
-      httpClient = HttpClient.newHttpClient();
+      // Get cheapest female
       request =
           HttpRequest.newBuilder(
-                  new URI("https://api.thegraph.com/subgraphs/name/treasureproject/marketplace"))
-              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                  new URI(
+                      "https://hfihu314z3.execute-api.us-east-1.amazonaws.com/collection/arb/smol-brains/tokens?offset=0&limit=25&sort_by=price&order=asc&traits=Gender:female"))
+              .GET()
               .header("Content-Type", "application/json")
               .build();
 
       try {
         HttpResponse<String> response =
             httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        JSONArray tokens = new JSONObject(response.body()).getJSONArray("tokens");
 
-        MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
+        final var price =
+            tokens.getJSONObject(0).getJSONObject("priceSummary").getBigInteger("floorPrice");
+        final var tokenId = tokens.getJSONObject(0).getInt("tokenId");
 
-        // Find cheapest male/female
-        boolean cheapestMaleFound = false;
-        boolean cheapestFemaleFound = false;
-        JSONArray listings =
-            new JSONObject(response.body()).getJSONObject("data").getJSONArray("listings");
-
-        for (int x = 0; x < listings.length(); x++) {
-          int tokenId = listings.getJSONObject(x).getJSONObject("token").getInt("tokenId");
-
-          try {
-            var gender =
-                smolBrainsContract.getGender(new BigInteger(String.valueOf(tokenId))).send();
-
-            // TODO: Remove 1944L; this is a floor hotfix
-            if (gender.intValue() == 0 && !cheapestMaleFound && tokenId != 1944L) {
-              cheapestMaleFound = true;
-
-              final var price = listings.getJSONObject(x).getBigInteger("pricePerItem");
-              this.cheapestMale = new BigDecimal(price, 18, mc);
-              this.cheapestMaleId = tokenId;
-            } else if (gender.intValue() == 1 && !cheapestFemaleFound) {
-              cheapestFemaleFound = true;
-
-              final var price = listings.getJSONObject(x).getBigInteger("pricePerItem");
-              this.cheapestFemale = new BigDecimal(price, 18, mc);
-              this.cheapestFemaleId = tokenId;
-            }
-
-            if (cheapestMaleFound && cheapestFemaleFound) {
-              break;
-            }
-          } catch (Exception ex) {
-            log.warn("Unable to retrieve gender", ex);
-          }
-        }
+        this.cheapestFemale = new BigDecimal(price, 18, mc);
+        this.cheapestFemaleId = tokenId;
       } catch (InterruptedException | JSONException ex) {
         log.warn("Error parsing treasure response", ex);
       }
 
-      if(cheapestMale == null) {
+      if (cheapestMale == null) {
         cheapestMale = new BigDecimal(0);
         floor = cheapestFemale;
       } else {
@@ -592,7 +602,7 @@ public class TreasureService {
       }
 
       // Get total listings
-      jsonBody =
+      String jsonBody =
           "{\"query\":\"query getCollectionStats($id: ID!) {\\n  collection(id: $id) {\\n    floorPrice\\n    totalListings\\n    totalVolume\\n    listings(where: {status: Active}) {\\n      token {\\n        floorPrice\\n        name\\n      }\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\"},\"operationName\":\"getCollectionStats\"}";
       request =
           HttpRequest.newBuilder(
@@ -629,7 +639,6 @@ public class TreasureService {
         final var floorPrice = obj.getBigInteger("floorPrice");
         totalFloorListings = obj.getInt("totalListings");
 
-        MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
         landFloor = new BigDecimal(floorPrice, 18, mc);
       } catch (InterruptedException | JSONException ex) {
         log.warn("Error parsing treasure response", ex);
@@ -667,8 +676,6 @@ public class TreasureService {
               .build();
 
       try {
-        MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
-
         HttpResponse<String> response =
             httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         JSONObject obj =
@@ -709,7 +716,6 @@ public class TreasureService {
 
         final var floorPrice = obj.getBigInteger("floorPrice");
 
-        MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
         bodyFloor = new BigDecimal(floorPrice, 18, mc);
       } catch (InterruptedException ex) {
         // Whatever; it'll retry
@@ -733,7 +739,6 @@ public class TreasureService {
 
         final var floorPrice = obj.getBigInteger("floorPrice");
 
-        MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
         petFloor = new BigDecimal(floorPrice, 18, mc);
       } catch (InterruptedException ex) {
         // Whatever; it'll retry
@@ -757,7 +762,6 @@ public class TreasureService {
 
         final var floorPrice = obj.getBigInteger("floorPrice");
 
-        MathContext mc = new MathContext(10, RoundingMode.HALF_UP);
         bodyPetFloor = new BigDecimal(floorPrice, 18, mc);
       } catch (InterruptedException ex) {
         // Whatever; it'll retry
