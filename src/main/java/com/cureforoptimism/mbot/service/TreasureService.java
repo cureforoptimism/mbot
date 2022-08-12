@@ -546,6 +546,7 @@ public class TreasureService {
       }
 
       // Get total listings
+      // TODO: FIX
       String jsonBody =
           "{\"query\":\"query getCollectionStats($id: ID!) {\\n  collection(id: $id) {\\n    floorPrice\\n    totalListings\\n    totalVolume\\n    listings(where: {status: Active}) {\\n      token {\\n        floorPrice\\n        name\\n      }\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0x6325439389e0797ab35752b4f43a14c004f22a9c\"},\"operationName\":\"getCollectionStats\"}";
       request =
@@ -566,22 +567,23 @@ public class TreasureService {
         return;
       }
 
-      jsonBody =
-          "{\"query\":\"query getCollectionStats($id: ID!) {\\n  collection(id: $id) {\\n    floorPrice\\n    totalListings\\n    totalVolume\\n    listings(where: {status: Active}) {\\n      token {\\n        floorPrice\\n        name\\n      }\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0xd666d1cc3102cd03e07794a61e5f4333b4239f53\"},\"operationName\":\"getCollectionStats\"}";
+      // Get land data
       request =
           HttpRequest.newBuilder(
-                  new URI("https://api.thegraph.com/subgraphs/name/wyze/treasure-marketplace"))
-              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                  new URI(
+                      "https://hfihu314z3.execute-api.us-east-1.amazonaws.com/collection/arb/smol-brains-land"))
+              .GET()
               .header("Content-Type", "application/json")
               .build();
 
       try {
         HttpResponse<String> response =
             httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        JSONObject obj =
-            new JSONObject(response.body()).getJSONObject("data").getJSONObject("collection");
+        JSONObject obj = new JSONObject(response.body());
         final var floorPrice = obj.getBigInteger("floorPrice");
-        totalFloorListings = obj.getInt("totalListings");
+
+        // TODO: Fix
+        //        totalFloorListings = obj.getInt("totalListings");
 
         landFloor = new BigDecimal(floorPrice, 18, mc);
       } catch (InterruptedException | JSONException ex) {
@@ -589,124 +591,95 @@ public class TreasureService {
       }
 
       // Get vroom total listings/floor
-      jsonBody =
-          "{\"query\":\"query getCollectionStats($id: ID!) {\\n  collection(id: $id) {\\n    floorPrice\\n    totalListings\\n    totalVolume\\n    listings(where: {status: Active}) {\\n      token {\\n        floorPrice\\n        name\\n      }\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0xb16966dad2b5a5282b99846b23dcdf8c47b6132c\"},\"operationName\":\"getCollectionStats\"}";
       request =
           HttpRequest.newBuilder(
-                  new URI("https://api.thegraph.com/subgraphs/name/wyze/treasure-marketplace"))
-              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                  new URI(
+                      "https://hfihu314z3.execute-api.us-east-1.amazonaws.com/collection/arb/smol-cars/tokens?offset=0&limit=25&sort_by=price&order=asc"))
+              .GET()
               .header("Content-Type", "application/json")
               .build();
 
       try {
         HttpResponse<String> response =
             httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        JSONObject obj =
-            new JSONObject(response.body()).getJSONObject("data").getJSONObject("collection");
 
-        totalVroomListings = obj.getInt("totalListings");
+        JSONArray tokens = new JSONObject(response.body()).getJSONArray("tokens");
+        final var price =
+            tokens.getJSONObject(0).getJSONObject("priceSummary").getBigInteger("floorPrice");
+        final var tokenId = tokens.getJSONObject(0).getInt("tokenId");
+
+        this.cheapestVroom = new BigDecimal(price, 18, mc);
+        this.cheapestVroomId = tokenId;
+
+        // TODO: Fix
+        //        totalVroomListings = obj.getInt("totalListings");
       } catch (InterruptedException ex) {
         // Whatever; it'll retry
         return;
       }
 
-      jsonBody =
-          "{\"query\":\"query getCollectionListings($id: ID!, $orderDirection: OrderDirection!, $tokenName: String, $skipBy: Int!, $first: Int!, $orderBy: Listing_orderBy!, $isERC1155: Boolean!) {\\n  collection(id: $id) {\\n    name\\n    address\\n    standard\\n    tokens(\\n      orderBy: floorPrice\\n      orderDirection: $orderDirection\\n      where: {name_contains: $tokenName}\\n    ) @include(if: $isERC1155) {\\n      id\\n      name\\n      tokenId\\n      listings(where: {status: Active}, orderBy: pricePerItem) {\\n        pricePerItem\\n        quantity\\n      }\\n      metadata {\\n        image\\n        name\\n        description\\n      }\\n    }\\n    listings(\\n      first: $first\\n      skip: $skipBy\\n      orderBy: $orderBy\\n      orderDirection: $orderDirection\\n      where: {status: Active, tokenName_contains: $tokenName}\\n    ) @skip(if: $isERC1155) {\\n      user {\\n        id\\n      }\\n      expires\\n      id\\n      pricePerItem\\n      token {\\n        tokenId\\n        metadata {\\n          image\\n          name\\n          description\\n        }\\n        name\\n      }\\n      quantity\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0xb16966dad2b5a5282b99846b23dcdf8c47b6132c\",\"isERC1155\":false,\"tokenName\":\"\",\"skipBy\":0,\"first\":42,\"orderBy\":\"pricePerItem\",\"orderDirection\":\"asc\"},\"operationName\":\"getCollectionListings\"}";
+      // Body floor
       request =
           HttpRequest.newBuilder(
-                  new URI("https://api.thegraph.com/subgraphs/name/wyze/treasure-marketplace"))
-              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                  new URI(
+                      "https://hfihu314z3.execute-api.us-east-1.amazonaws.com/collection/arb/smol-bodies/tokens?offset=0&limit=25&sort_by=price&order=asc"))
+              .GET()
               .header("Content-Type", "application/json")
               .build();
 
       try {
         HttpResponse<String> response =
             httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        JSONObject obj =
-            new JSONObject(response.body()).getJSONObject("data").getJSONObject("collection");
+        JSONArray tokens = new JSONObject(response.body()).getJSONArray("tokens");
 
-        // Hotfix: Skip 4547 (bugged listing)
-        JSONObject firstListing = obj.getJSONArray("listings").getJSONObject(0);
-        if (firstListing.getJSONObject("token").getInt("tokenId") == 4547) {
-          firstListing = obj.getJSONArray("listings").getJSONObject(1);
-        }
+        final var price =
+            tokens.getJSONObject(0).getJSONObject("priceSummary").getBigInteger("floorPrice");
 
-        final var price = firstListing.getBigInteger("pricePerItem");
-        this.cheapestVroom = new BigDecimal(price, 18, mc);
-        this.cheapestVroomId = firstListing.getJSONObject("token").getInt("tokenId");
-      } catch (InterruptedException ex) {
-        // Whatever; it'll retry
-      }
-
-      // Body floor (also, for the love of God cure, just rewrite thegraph query to do this in fewer
-      // calls)
-      jsonBody =
-          "{\"query\":\"query getCollectionStats($id: ID!) {\\n  collection(id: $id) {\\n    listings(where: {status: Active}) {\\n      token {\\n        floorPrice\\n        tokenId\\n        name\\n      }\\n    }\\n    standard\\n    stats {\\n      floorPrice\\n      listings\\n      items\\n      volume\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0x17dacad7975960833f374622fad08b90ed67d1b5\"},\"operationName\":\"getCollectionStats\"}";
-      request =
-          HttpRequest.newBuilder(
-                  new URI("https://api.thegraph.com/subgraphs/name/treasureproject/marketplace"))
-              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-              .header("Content-Type", "application/json")
-              .build();
-
-      try {
-        HttpResponse<String> response =
-            httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        JSONObject obj =
-            new JSONObject(response.body())
-                .getJSONObject("data")
-                .getJSONObject("collection")
-                .getJSONObject("stats");
-
-        final var floorPrice = obj.getBigInteger("floorPrice");
-
-        bodyFloor = new BigDecimal(floorPrice, 18, mc);
+        bodyFloor = new BigDecimal(price, 18, mc);
       } catch (InterruptedException ex) {
         // Whatever; it'll retry
       }
 
       // Pet (Brains) floor
-      jsonBody =
-          "{\"query\":\"query getCollectionStats($id: ID!) {\\n  collection(id: $id) {\\n    name\\n    floorPrice\\n    totalListings\\n    totalVolume\\n    listings(where: {status: Active}) {\\n      token {\\n        floorPrice\\n        tokenId\\n        name\\n      }\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0xf6cc57c45ce730496b4d3df36b9a4e4c3a1b9754\"},\"operationName\":\"getCollectionStats\"}";
       request =
           HttpRequest.newBuilder(
-                  new URI("https://api.thegraph.com/subgraphs/name/treasureproject/marketplace"))
-              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                  new URI(
+                      "https://hfihu314z3.execute-api.us-east-1.amazonaws.com/collection/arb/smol-brains-pets/tokens?offset=0&limit=25&sort_by=price&order=asc"))
+              .GET()
               .header("Content-Type", "application/json")
               .build();
 
       try {
         HttpResponse<String> response =
             httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        JSONObject obj =
-            new JSONObject(response.body()).getJSONObject("data").getJSONObject("collection");
+        JSONArray tokens = new JSONObject(response.body()).getJSONArray("tokens");
 
-        final var floorPrice = obj.getBigInteger("floorPrice");
+        final var price =
+            tokens.getJSONObject(0).getJSONObject("priceSummary").getBigInteger("floorPrice");
 
-        petFloor = new BigDecimal(floorPrice, 18, mc);
+        petFloor = new BigDecimal(price, 18, mc);
       } catch (InterruptedException ex) {
         // Whatever; it'll retry
       }
 
-      // Pet (Brains) floor
-      jsonBody =
-          "{\"query\":\"query getCollectionStats($id: ID!) {\\n  collection(id: $id) {\\n    name\\n    floorPrice\\n    totalListings\\n    totalVolume\\n    listings(where: {status: Active}) {\\n      token {\\n        floorPrice\\n        tokenId\\n        name\\n      }\\n    }\\n  }\\n}\",\"variables\":{\"id\":\"0xae0d0c4cc3335fd49402781e406adf3f02d41bca\"},\"operationName\":\"getCollectionStats\"}";
+      // Pet (Swols) floor
       request =
           HttpRequest.newBuilder(
-                  new URI("https://api.thegraph.com/subgraphs/name/treasureproject/marketplace"))
-              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                  new URI(
+                      "https://hfihu314z3.execute-api.us-east-1.amazonaws.com/collection/arb/smol-bodies-pets/tokens?offset=0&limit=25&sort_by=price&order=asc"))
+              .GET()
               .header("Content-Type", "application/json")
               .build();
 
       try {
         HttpResponse<String> response =
             httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        JSONObject obj =
-            new JSONObject(response.body()).getJSONObject("data").getJSONObject("collection");
+        JSONArray tokens = new JSONObject(response.body()).getJSONArray("tokens");
 
-        final var floorPrice = obj.getBigInteger("floorPrice");
+        final var price =
+            tokens.getJSONObject(0).getJSONObject("priceSummary").getBigInteger("floorPrice");
 
-        bodyPetFloor = new BigDecimal(floorPrice, 18, mc);
+        bodyPetFloor = new BigDecimal(price, 18, mc);
       } catch (InterruptedException ex) {
         // Whatever; it'll retry
       }
