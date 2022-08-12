@@ -371,10 +371,7 @@ public class FloorCommand implements MbotCommand {
 
     final var output =
         String.format(
-            "Total SMOL listings: %d (%d LAND, %d VROOM)\nCheapest Male ID: #%d, Cheapest Female ID: #%d\nCheapest Vroom ID: #%d```\n%s```\n",
-            totalListings,
-            totalLandListings,
-            totalVroomListings,
+            "Cheapest Male ID: #%d, Cheapest Female ID: #%d\nCheapest Vroom ID: #%d```\n%s```\n",
             cheapestMaleId,
             cheapestFemaleId,
             cheapestVroomId,
