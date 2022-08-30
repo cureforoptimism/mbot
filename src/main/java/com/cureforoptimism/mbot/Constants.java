@@ -13,10 +13,15 @@ public class Constants {
   public static final long SWOL_GUILD_ID = 903403660908838962L;
   public static final long SMOL_GUILD_ID = 897404773622505482L;
   public static final long SWOL_OG_ROLE_ID = 903411238791442512L;
+  public static final long SMOL_WEN_ROLE_ID = 967824911739539536L;
+  public static final long SMOL_POKER_ROLE_ID = 979924850938363974L;
+  public static final long SMOL_GAMES_ROLE_ID = 975822959975469098L;
+  public static final long SMOL_SMOL_ROLE_ID = 963232197526044692L;
   public static final long SMOL_OG_ROLE_ID = 963739029709422603L;
   public static final long SMOL_TEAM_ROLE_ID = 920825123672571935L;
   public static final long CFO_TEST_GUILD_ID = 926303694302109796L;
   public static final long CFO_TEST_ROLE_ID_FROM = 935797232198901821L;
   public static final long CFO_TEST_ROLE_ID_TO = 959611654147014657L;
   public static final long CFO_USER_ID = 793741749989801985L;
+  public static final String SMOLBRAINS_CONTRACT_ID = "0x6325439389e0797ab35752b4f43a14c004f22a9c";
 }
