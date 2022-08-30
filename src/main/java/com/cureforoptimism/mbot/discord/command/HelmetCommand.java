@@ -307,6 +307,7 @@ public class HelmetCommand implements MbotCommand {
 
   @Override
   public Mono<Void> handle(ChatInputInteractionEvent event) {
+    log.info("/helmet command recieved");
     event.deferReply().block();
 
     final var tokenId = Utilities.getOptionString(event, "id").orElse("");
