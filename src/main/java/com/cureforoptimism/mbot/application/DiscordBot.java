@@ -44,6 +44,7 @@ public class DiscordBot implements ApplicationRunner {
   final ApplicationContext context;
   static GatewayDiscordClient client;
   final TokenService tokenService;
+  Set<Snowflake> bannedNickChanges;
 
   // TODO: This sucks. Makes this suck less with a rational pattern.
   @Getter Double currentPrice;
@@ -59,6 +60,8 @@ public class DiscordBot implements ApplicationRunner {
   public DiscordBot(ApplicationContext context, TokenService tokenService) {
     this.context = context;
     this.tokenService = tokenService;
+
+    bannedNickChanges = new HashSet<>();
   }
 
   public void refreshMagicPrice(
@@ -175,9 +178,14 @@ public class DiscordBot implements ApplicationRunner {
                     .toStream()
                     .forEach(
                         g -> {
+                          if (bannedNickChanges.contains(g.getId())) {
+                            return;
+                          }
+
                           try {
                             g.changeSelfNickname(nickName).block();
                           } catch (Exception ex) {
+                            bannedNickChanges.add(g.getId());
                             log.warn(
                                 "Unable to change nickname for server: "
                                     + g.getId()
