@@ -39,7 +39,7 @@ dependencies {
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-jackson:2.9.0'
     implementation 'com.squareup.okhttp3:okhttp:4.9.3'
-    implementation 'com.discord4j:discord4j-core:3.2.2'
+    implementation 'com.discord4j:discord4j-core:3.2.3'
     implementation 'org.springframework.boot:spring-boot-starter-aop:2.7.0'
     implementation 'org.json:json:20220320'
     implementation 'org.web3j.eth2:beacon-node-api:1.0.0'

@@ -187,19 +187,27 @@ public class HelmetCommand implements MbotCommand {
       BufferedImage imageSmol;
       BufferedImage genderOverlay = null;
       BufferedImage overlay = null;
+      boolean pivotImage = false; // HACK: Mask misses a few pixels for gangster hat
 
       if (smolType == SmolType.SMOL) {
         List<Trait> traits = traitsRepository.findBySmol_Id(Long.parseLong(tokenId));
 
         String glasses = "";
         String gender = "";
+        String hat = "";
 
         for (Trait trait : traits) {
           if (trait.getType().equals("Glasses")) {
             glasses = trait.getValue();
           } else if (trait.getType().equals("Gender")) {
             gender = trait.getValue();
+          } else if (trait.getType().equals("Hat")) {
+            hat = trait.getValue();
           }
+        }
+
+        if (hat.equalsIgnoreCase("gangster")) {
+          pivotImage = true;
         }
 
         switch (gender.toLowerCase()) {
@@ -251,10 +259,15 @@ public class HelmetCommand implements MbotCommand {
       Graphics2D graphics = output.createGraphics();
       graphics.setComposite(AlphaComposite.SrcOver);
       graphics.drawImage(imageSmol, 0, 0, null);
-      graphics.drawImage(genderOverlay, 0, 0, null);
+
+      if (pivotImage) {
+        graphics.drawImage(genderOverlay, 1, 1, null);
+      } else {
+        graphics.drawImage(genderOverlay, 0, 0, null);
+      }
 
       // Replace green screen area with original background color
-      final var greenScreenColor = output.getRGB(0, 0);
+      final var greenScreenColor = output.getRGB(1, 1);
 
       ImageFilter imageFilter =
           new RGBImageFilter() {
@@ -288,7 +301,6 @@ public class HelmetCommand implements MbotCommand {
   }
 
   private InteractionFollowupCreateSpec getFollowup(String tokenId, SmolType smolType) {
-    // TODO: Refactor for DRY - you're better than this, Cure
     final var outputStream = getImageOutputStream(tokenId, smolType);
 
     return InteractionFollowupCreateSpec.builder()

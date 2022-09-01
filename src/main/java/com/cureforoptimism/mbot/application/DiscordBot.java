@@ -45,6 +45,7 @@ public class DiscordBot implements ApplicationRunner {
   static GatewayDiscordClient client;
   final TokenService tokenService;
   Set<Snowflake> bannedNickChanges;
+  String lastNickName = "";
 
   // TODO: This sucks. Makes this suck less with a rational pattern.
   @Getter Double currentPrice;
@@ -137,7 +138,7 @@ public class DiscordBot implements ApplicationRunner {
 
     // Delete old/unused commands
     for (ApplicationCommandData command : slashCommands.values()) {
-      long commandId = Long.parseLong(command.id());
+      long commandId = command.id().asLong();
 
       ApplicationCommandRequest request = jsonCommands.get(command.name());
 
@@ -173,6 +174,13 @@ public class DiscordBot implements ApplicationRunner {
                 String posNeg = currentChange >= 0.0 ? "\uD83C\uDF4C" : "\uD83C\uDF46";
                 String nickName = ("MAGIC $" + currentPrice + " " + posNeg);
                 String presence = String.format("24h: %.2f%%", currentChange);
+
+                if (nickName.equalsIgnoreCase(lastNickName)) {
+                  return;
+                }
+
+                lastNickName = nickName;
+
                 client
                     .getGuilds()
                     .toStream()
