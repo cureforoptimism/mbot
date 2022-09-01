@@ -307,7 +307,7 @@ public class HelmetCommand implements MbotCommand {
         .addFile("helmet" + tokenId + ".png", new ByteArrayInputStream(outputStream.toByteArray()))
         .addEmbed(
             EmbedCreateSpec.builder()
-                .title("EEEEEEEEEEEEEEEEEEE HELMETS")
+                .title("Smols, start your engines!")
                 .author(
                     "SmolBot",
                     null,
