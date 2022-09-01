@@ -138,7 +138,7 @@ public class DiscordBot implements ApplicationRunner {
 
     // Delete old/unused commands
     for (ApplicationCommandData command : slashCommands.values()) {
-      long commandId = Long.parseLong(command.id());
+      long commandId = command.id().asLong();
 
       ApplicationCommandRequest request = jsonCommands.get(command.name());
 
@@ -175,7 +175,7 @@ public class DiscordBot implements ApplicationRunner {
                 String nickName = ("MAGIC $" + currentPrice + " " + posNeg);
                 String presence = String.format("24h: %.2f%%", currentChange);
 
-                if(nickName.equalsIgnoreCase(lastNickName)) {
+                if (nickName.equalsIgnoreCase(lastNickName)) {
                   return;
                 }
 
