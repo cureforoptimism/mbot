@@ -712,24 +712,36 @@ public class Utilities {
 
     try {
       HttpClient httpClient = HttpClient.newHttpClient();
-      HttpRequest request =
-          switch (smolType) {
-            case SMOL -> forceSmolBrain
-                ? HttpRequest.newBuilder().uri(new URI(this.smolBaseUri + id + "/0")).GET().build()
-                : HttpRequest.newBuilder()
-                    .uri(new URI(this.smolBaseUri + id + "/" + getSmolBrainSize(id)))
-                    .GET()
-                    .build();
-            case VROOM -> HttpRequest.newBuilder()
-                .uri(new URI(this.vroomBaseUri + id))
-                .GET()
-                .build();
-            case SMOL_BODY -> HttpRequest.newBuilder()
-                .uri(new URI(this.smolBodyBaseUri + id + (forceSwolBody ? "/6" : "/0")))
-                .GET()
-                .build();
-            default -> null;
-          };
+      HttpRequest request;
+      switch (smolType) {
+        case SMOL:
+          request =
+              forceSmolBrain
+                  ? HttpRequest.newBuilder()
+                      .uri(new URI(this.smolBaseUri + id + "/0"))
+                      .GET()
+                      .build()
+                  : HttpRequest.newBuilder()
+                      .uri(new URI(this.smolBaseUri + id + "/" + getSmolBrainSize(id)))
+                      .GET()
+                      .build();
+          break;
+        case VROOM:
+          request = HttpRequest.newBuilder().uri(new URI(this.vroomBaseUri + id)).GET().build();
+          break;
+        case SMOL_BODY:
+          final String base =
+              this.smolBodyBaseUri.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/");
+
+          request =
+              HttpRequest.newBuilder()
+                  .uri(new URI(base + id + (forceSwolBody ? "/6" : "/0")))
+                  .GET()
+                  .build();
+          break;
+        default:
+          request = null;
+      }
 
       if (request == null) {
         return Optional.empty();
