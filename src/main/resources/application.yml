@@ -13,7 +13,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/mbot?createDatabaseIfNotExist=true
     username: root
-    password: password
+    password: JhyjCDHaV2
     hikari:
       max-lifetime: 580000
 
