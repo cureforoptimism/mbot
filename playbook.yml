@@ -20,7 +20,7 @@
                 name: mbot
                 env:
                 - name: MYSQL_HOST
-                  value: mysql
+                  value: mariadb
                 - name: MYSQL_PORT
                   value: "3306"
                 - name: REDIS_HOST
@@ -28,7 +28,7 @@
                 - name: REDIS_PORT
                   value: "6379"
                 - name: REDIS_PASSWORD
-                  value: "a8ElD0aWae"
+                  value: "dMlHRgLlmO"
                 volumeMounts:
                 - name: mbot-persistent-storage
                   mountPath: /mbot/img_cache
